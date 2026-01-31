@@ -27,7 +27,7 @@
   });
 
   // Восстановление состояния сайдбара при загрузке страницы
-  $(document).ready(function() {
+  $(window).on("load", function() {
     const isSidebarCollapsed = localStorage.getItem("sidebarCollapsed") === "true";
     if (isSidebarCollapsed) {
       $(".sidebar-toggle").addClass("active");
