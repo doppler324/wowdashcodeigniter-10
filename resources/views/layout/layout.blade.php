@@ -30,6 +30,8 @@
 
     </main>
 
+    {!! isset($style) ? $style : '' !!}
+
     <!-- ..::  scripts  start ::.. -->
     <x-scripts script="{!! isset($script) ? $script : '' !!}" />
 

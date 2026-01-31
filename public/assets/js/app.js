@@ -15,10 +15,25 @@
     item.toggleClass("dropdown-open");
   });
 
+  // Сохранение состояния сайдбара в localStorage
   $(".sidebar-toggle").on("click", function(){
     $(this).toggleClass("active");
     $(".sidebar").toggleClass("active");
     $(".dashboard-main").toggleClass("active");
+
+    // Сохраняем состояние в localStorage
+    const isSidebarCollapsed = $(".sidebar").hasClass("active");
+    localStorage.setItem("sidebarCollapsed", isSidebarCollapsed);
+  });
+
+  // Восстановление состояния сайдбара при загрузке страницы
+  $(document).ready(function() {
+    const isSidebarCollapsed = localStorage.getItem("sidebarCollapsed") === "true";
+    if (isSidebarCollapsed) {
+      $(".sidebar-toggle").addClass("active");
+      $(".sidebar").addClass("active");
+      $(".dashboard-main").addClass("active");
+    }
   });
 
   $(".sidebar-mobile-toggle").on("click", function(){
@@ -110,16 +125,16 @@ button.addEventListener("click", (event) => {
   updateThemeOnHtmlEl({ theme: newTheme });
 
   currentThemeSetting = newTheme;
-}); 
+});
 
 // =========================== Table Header Checkbox checked all js Start ================================
 $('#selectAll').on('change', function () {
-  $('.form-check .form-check-input').prop('checked', $(this).prop('checked')); 
-}); 
+  $('.form-check .form-check-input').prop('checked', $(this).prop('checked'));
+});
 
   // Remove Table Tr when click on remove btn start
   $('.remove-btn').on('click', function () {
-    $(this).closest('tr').remove(); 
+    $(this).closest('tr').remove();
 
     // Check if the table has no rows left
     if ($('.table tbody tr').length === 0) {

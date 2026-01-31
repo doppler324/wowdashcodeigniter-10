@@ -12,11 +12,17 @@ $paddingLeft = $page->nesting_level * 10;
         @endif
     </td>
     <td>{{ $page->id }}</td>
-    <td>
-        <div style="padding-left: {{ $paddingLeft }}px;">
-            <a href="{{ $page->url }}" target="_blank" class="text-primary-600">{{ Str::limit($page->url, 50) }}</a>
+    <td class="tree-cell">
+        @for($i = 0; $i < $page->nesting_level; $i++)
+            <div class="tree-line" style="left: {{ $i * 6 }}px;"></div>
+        @endfor
+        @if($page->nesting_level > 0)
+            <div class="tree-corner" style="left: {{ ($page->nesting_level - 1) * 6 }}px;"></div>
+        @endif
+        <div style="padding-left: {{ $page->nesting_level * 6 }}px;">
+            <a href="{{ $page->url }}" target="_blank" class="text-primary-600 text-primary-600-hover d-block" style="max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ $page->url }}</a>
             @if($page->title)
-                <br><small class="text-muted">{{ Str::limit($page->title, 40) }}</small>
+                <small class="text-muted d-block" style="max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ $page->title }}</small>
             @endif
         </div>
     </td>
