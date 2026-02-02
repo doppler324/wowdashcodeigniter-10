@@ -303,6 +303,9 @@ document.addEventListener("DOMContentLoaded", function() {
             </div>
             <a href="{{ route('projects.pages.index', $project) }}" class="btn btn-info">Все страницы</a>
             <a href="{{ route('projects.pages.create', $project) }}" class="btn btn-primary">Добавить страницу</a>
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#importPagesModal">
+                Импорт страниц
+            </button>
             <a href="{{ route('projects.index') }}" class="btn btn-secondary">Назад к списку</a>
         </div>
     </div>
@@ -343,3 +346,42 @@ document.addEventListener("DOMContentLoaded", function() {
 </div>
 
 @endsection
+
+<!-- Modal для импорта страниц -->
+<div class="modal fade" id="importPagesModal" tabindex="-1" aria-labelledby="importPagesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="importPagesModalLabel">Импорт страниц</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ route('projects.pages.import', $project) }}" method="POST">
+                @csrf
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="pagesData" class="form-label">Данные страниц</label>
+                        <textarea class="form-control" id="pagesData" name="pages_data" rows="10" placeholder="Введите данные страниц через точку с запятой. Пример:
+/ (Главная) [home];
+/about (О нас) [section];
+/contact (Контакты) [card];
+/blog (Блог) [section];
+/blog/post-1 (Первый пост) [card];
+/blog/post-2 (Второй пост) [card]"></textarea>
+                        <div class="text-light">Формат строки: URL|Заголовок|Тип|Ключевые слова|ID родителя;<br>
+- URL (обязательно) - адрес страницы<br>
+- Заголовок (необязательно) - название страницы<br>
+- Тип (необязательно) - home/section/card (по умолчанию card)<br>
+- Ключевые слова (необязательно) - через запятую<br>
+- ID родителя (необязательно) - ID страницы-родителя<br>
+Пример: /about|О нас|section|о нас, компания;<br>
+Пример с родителем: /about/team|Команда|card|команда, сотрудники|2;<br>
+                        </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Импортировать</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
