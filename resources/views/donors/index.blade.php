@@ -5,15 +5,23 @@ $title = 'Все доноры проекта';
 $subTitle = 'Проект: ' . $project->name;
 $script = '<script>
     // Инициализация DataTable
+    var table;
     if (typeof DataTable !== "undefined") {
-        new DataTable("#donorsTable", {
+        var savedPageLength = localStorage.getItem("donorsTableLength");
+        var initialPageLength = savedPageLength ? parseInt(savedPageLength) : 10;
+
+        table = new DataTable("#donorsTable", {
             paging: true,
+            lengthChange: true,
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Все"]],
+            pageLength: initialPageLength,
             ordering: true,
             info: true,
             searching: true,
-            language: {
-                url: "//cdn.datatables.net/plug-ins/1.13.4/i18n/ru.json"
-            }
+        });
+
+        table.on("length.dt", function(e, settings, len) {
+            localStorage.setItem("donorsTableLength", len);
         });
     }
 </script>';

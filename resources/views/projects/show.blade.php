@@ -103,26 +103,27 @@ function hideAllChildren(parentId) {
     });
 }
 
-     // Инициализация DataTable
-     let table;
-     if (typeof DataTable !== "undefined") {
-         table = new DataTable("#dataTable", {
-             paging: false,
-             ordering: true,
-             info: false,
-             searching: true,
-             columnDefs: [
-                 { targets: [0], width: "50px" },
-                 { targets: [1], width: "60px" },
-                 { targets: [3], width: "100px" },
-                 { targets: [4], width: "90px" },
-                 { targets: [5], width: "100px" },
-                 { targets: [6], width: "110px" },
-                 { targets: [7], width: "80px" },
-                 { targets: [8], width: "140px" }
-             ]
-         });
-     }
+       // Инициализация DataTable
+      var table;
+      if (typeof DataTable !== "undefined") {
+          table = new DataTable("#dataTable", {
+              paging: false, // Отключаем пагинацию для дерева
+              lengthChange: false, // Отключаем выбор количества строк
+              ordering: true,
+              info: false, // Отключаем информацию о количестве записей
+              searching: true,
+              columnDefs: [
+                  { targets: [0], width: "50px" },
+                  { targets: [1], width: "60px" },
+                  { targets: [3], width: "100px" },
+                  { targets: [4], width: "90px" },
+                  { targets: [5], width: "100px" },
+                  { targets: [6], width: "110px" },
+                  { targets: [7], width: "80px" },
+                  { targets: [8], width: "140px" }
+              ]
+          });
+      }
 
     // Настройки отображения столбцов — генерируются автоматически из заголовков таблицы
     let columnSettings = {};
@@ -282,13 +283,6 @@ document.addEventListener("DOMContentLoaded", function() {
     <div class="card-header border-bottom bg-base py-16 px-24 d-flex align-items-center flex-wrap gap-3 justify-content-between">
         <div class="d-flex align-items-center flex-wrap gap-3">
             <h5 class="card-title mb-0">Страницы сайта: {{ $project->name }}</h5>
-            <!-- Search input -->
-            <div class="position-relative">
-                <input type="text" class="form-control search-input" placeholder="Поиск..." id="tableSearch">
-                <span class="position-absolute top-50 end-16 translate-middle-y text-gray-400">
-                    <iconify-icon icon="heroicons:magnifying-glass"></iconify-icon>
-                </span>
-            </div>
         </div>
          <div class="d-flex align-items-center flex-wrap gap-3">
             <!-- Кнопка настроек столбцов -->
@@ -307,7 +301,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     </div>
                 </div>
             </div>
-            <a href="{{ route('projects.donors.index', $project) }}" class="btn btn-info">Все доноры</a>
+            <a href="{{ route('projects.pages.index', $project) }}" class="btn btn-info">Все страницы</a>
             <a href="{{ route('projects.pages.create', $project) }}" class="btn btn-primary">Добавить страницу</a>
             <a href="{{ route('projects.index') }}" class="btn btn-secondary">Назад к списку</a>
         </div>

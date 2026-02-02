@@ -13,7 +13,7 @@ class PagesController extends Controller
      */
     public function index(Project $project)
     {
-        $pages = $project->pages()->paginate(20);
+        $pages = $project->pages()->get();
         return view('pages.index', compact('project', 'pages'));
     }
 

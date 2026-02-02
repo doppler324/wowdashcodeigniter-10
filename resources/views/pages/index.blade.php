@@ -3,6 +3,38 @@
 @php
 $title = 'Страницы';
 $subTitle = 'Страницы проекта: ' . $project->name;
+$script = '<script>
+    // Инициализация DataTable
+    var table;
+    if (typeof DataTable !== "undefined") {
+        var savedPageLength = localStorage.getItem("allPagesTableLength");
+        var initialPageLength = savedPageLength ? parseInt(savedPageLength) : 10;
+
+        table = new DataTable("#pagesTable", {
+            paging: true,
+            lengthChange: true,
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Все"]],
+            pageLength: initialPageLength,
+            ordering: true,
+            info: true,
+            searching: true,
+            columnDefs: [
+                { targets: [0], width: "50px" },
+                { targets: [1], width: "60px" },
+                { targets: [3], width: "100px" },
+                { targets: [4], width: "90px" },
+                { targets: [5], width: "100px" },
+                { targets: [6], width: "110px" },
+                { targets: [7], width: "80px" },
+                { targets: [8], width: "140px" }
+            ]
+        });
+
+        table.on("length.dt", function(e, settings, len) {
+            localStorage.setItem("allPagesTableLength", len);
+        });
+    }
+</script>';
 @endphp
 
 @section('content')
@@ -24,7 +56,7 @@ $subTitle = 'Страницы проекта: ' . $project->name;
 
         @if($pages->count() > 0)
             <div class="table-responsive scroll-sm">
-                <table class="table basic-table mb-0">
+                <table class="table basic-table mb-0" id="pagesTable">
                     <thead>
                         <tr>
                             <th scope="col">ID</th>
@@ -88,9 +120,6 @@ $subTitle = 'Страницы проекта: ' . $project->name;
                         @endforeach
                     </tbody>
                 </table>
-            </div>
-            <div class="mt-3">
-                {{ $pages->links() }}
             </div>
         @else
             <div class="text-center py-20">
