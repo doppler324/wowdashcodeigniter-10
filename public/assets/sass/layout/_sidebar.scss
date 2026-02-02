@@ -37,6 +37,10 @@
   }
   &.active {
     width: auto;
+    .sidebar-logo,
+    .sidebar-menu-area {
+      padding-inline: rem(12px);
+    }
     &:hover {
       @include media(xl) {
         inset-inline-start: 0;
@@ -128,7 +132,7 @@
   }
   &-logo {
     height: rem(72px);
-    padding: rem(14px) rem(16px);
+    padding: rem(14px) rem(12px);
     border-inline-end: 1px solid var(--neutral-200);
     border-block-end: 1px solid var(--neutral-200);
     display: flex;
@@ -146,7 +150,7 @@
   }
   &-menu-area {
     height: calc(100vh - 72px);
-    padding: rem(12px) rem(16px);
+    padding: rem(8px) rem(12px);
     overflow-y: auto;
     border-inline-end: 1px solid var(--neutral-200);
     &:hover {
@@ -245,7 +249,7 @@
         color: #fff;
         &:hover {
           color: #fff;
-        } 
+        }
       }
     }
     a {

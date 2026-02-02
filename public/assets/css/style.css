@@ -1,8 +1,8 @@
 /** ================================= Table Of Contents =================================== /
-1. Abstract Css 
-    1.1 Function Css 
-    1.2 Variables Css 
-    1.3 Mixins Css 
+1. Abstract Css
+    1.1 Function Css
+    1.2 Variables Css
+    1.3 Mixins Css
 
 
 2. Component Css
@@ -12614,6 +12614,10 @@ td.fc-header-center {
 .sidebar.active {
   width: auto;
 }
+.sidebar.active .sidebar-logo,
+.sidebar.active .sidebar-menu-area {
+  padding-inline: 0.75rem;
+}
 @media (min-width: 1200px) {
   .sidebar.active:hover {
     inset-inline-start: 0;
@@ -12673,7 +12677,7 @@ td.fc-header-center {
 }
 .sidebar-logo {
   height: 4.5rem;
-  padding: 0.875rem 1rem;
+  padding: 0.875rem 0.75rem;
   border-inline-end: 1px solid var(--neutral-200);
   border-block-end: 1px solid var(--neutral-200);
   display: flex;
@@ -12691,7 +12695,7 @@ td.fc-header-center {
 }
 .sidebar-menu-area {
   height: calc(100vh - 72px);
-  padding: 0.75rem 1rem;
+  padding: 0.5rem 0.75rem;
   overflow-y: auto;
   border-inline-end: 1px solid var(--neutral-200);
 }
@@ -12846,6 +12850,7 @@ td.fc-header-center {
 /* === dashboard body css start === */
 .dashboard-main {
   margin-inline-start: 0;
+  margin-inline-end: 0;
   display: flex;
   flex-wrap: wrap;
   flex-flow: column;
@@ -12855,16 +12860,19 @@ td.fc-header-center {
 @media (min-width: 1200px) {
   .dashboard-main {
     margin-inline-start: 13.75rem;
+    margin-inline-end: 1.25rem;
   }
 }
 @media (min-width: 1400px) {
   .dashboard-main {
     margin-inline-start: 17.1875rem;
+    margin-inline-end: 1.5rem;
   }
 }
 @media (min-width: 1650px) {
   .dashboard-main {
     margin-inline-start: 19.5rem;
+    margin-inline-end: 1.875rem;
   }
 }
 .dashboard-main-body {

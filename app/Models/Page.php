@@ -19,7 +19,6 @@ class Page extends Model
         'url',
         'type',
         'title',
-        'incoming_links_count',
         'keywords',
         'status_code',
         'is_indexable',
@@ -49,6 +48,14 @@ class Page extends Model
     }
 
     /**
+     * Get the donors for the page.
+     */
+    public function donors()
+    {
+        return $this->hasMany(Donor::class);
+    }
+
+    /**
      * Get the parent page.
      */
     public function parent(): BelongsTo
@@ -70,5 +77,13 @@ class Page extends Model
     public function hasChildren(): bool
     {
         return $this->children()->exists();
+    }
+
+    /**
+     * Get the number of incoming links.
+     */
+    public function getIncomingLinksCountAttribute()
+    {
+        return $this->donors()->count();
     }
 }

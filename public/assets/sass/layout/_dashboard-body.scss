@@ -1,5 +1,6 @@
 .dashboard-main {
   margin-inline-start: 0;
+  margin-inline-end: 0;
   display: flex;
   flex-wrap: wrap;
   flex-flow: column;
@@ -7,12 +8,15 @@
   transition: all 0.3s;
   @include media(xl) {
     margin-inline-start: rem(220px);
+    margin-inline-end: rem(20px);
   }
   @include media(xxl) {
     margin-inline-start: rem(275px);
+    margin-inline-end: rem(24px);
   }
   @include media(3xl) {
     margin-inline-start: rem(312px);
+    margin-inline-end: rem(30px);
   }
   &-body {
     padding: rem(15px);

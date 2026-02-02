@@ -71,6 +71,7 @@ class PagesController extends Controller
      */
     public function show(Project $project, Page $page)
     {
+        $page->load('donors');
         return view('pages.show', compact('project', 'page'));
     }
 

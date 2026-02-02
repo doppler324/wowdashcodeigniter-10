@@ -15,6 +15,7 @@ use App\Http\Controllers\TableController;
 use App\Http\Controllers\UsersController;
 use App\Http\Controllers\ProjectsController;
 use App\Http\Controllers\PagesController;
+use App\Http\Controllers\DonorController;
 
 
 Route::controller(DashboardController::class)->group(function () {
@@ -178,6 +179,13 @@ Route::prefix('projects')->group(function () {
         Route::delete('/{project}', 'destroy')->name('projects.destroy');
     });
 
+    // Donors (nested under project - all donors)
+    Route::prefix('{project}/donors')->group(function () {
+        Route::controller(DonorController::class)->group(function () {
+            Route::get('/', 'index')->name('projects.donors.index');
+        });
+    });
+
     // Pages (nested resource)
     Route::prefix('{project}/pages')->group(function () {
         Route::controller(PagesController::class)->group(function () {
@@ -188,6 +196,18 @@ Route::prefix('projects')->group(function () {
             Route::get('/{page}/edit', 'edit')->name('projects.pages.edit');
             Route::put('/{page}', 'update')->name('projects.pages.update');
             Route::delete('/{page}', 'destroy')->name('projects.pages.destroy');
+        });
+
+        // Donors (nested under pages)
+        Route::prefix('{page}/donors')->group(function () {
+            Route::controller(DonorController::class)->group(function () {
+                Route::get('/create', 'create')->name('projects.pages.donors.create');
+                Route::post('/', 'store')->name('projects.pages.donors.store');
+                Route::get('/{donor}', 'show')->name('projects.pages.donors.show');
+                Route::get('/{donor}/edit', 'edit')->name('projects.pages.donors.edit');
+                Route::put('/{donor}', 'update')->name('projects.pages.donors.update');
+                Route::delete('/{donor}', 'destroy')->name('projects.pages.donors.destroy');
+            });
         });
     });
 });

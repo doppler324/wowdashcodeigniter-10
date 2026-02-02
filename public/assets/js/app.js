@@ -27,12 +27,12 @@
   });
 
   // Восстановление состояния сайдбара при загрузке страницы
-  $(window).on("load", function() {
-    const isSidebarCollapsed = localStorage.getItem("sidebarCollapsed") === "true";
+  document.addEventListener('DOMContentLoaded', function() {
+    const isSidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
     if (isSidebarCollapsed) {
-      $(".sidebar-toggle").addClass("active");
-      $(".sidebar").addClass("active");
-      $(".dashboard-main").addClass("active");
+      $('.sidebar-toggle').addClass('active');
+      $('.sidebar').addClass('active');
+      $('.dashboard-main').addClass('active');
     }
   });
 
