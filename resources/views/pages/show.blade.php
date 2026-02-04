@@ -265,7 +265,7 @@ document.addEventListener("DOMContentLoaded", function() {
             <a href="{{ route('projects.pages.donors.create', [$project, $page]) }}" class="btn btn-primary">Добавить донора</a>
         </div>
 
-        @if($page->donors->count() > 0)
+         @if($page->donors->count() > 0)
             <div class="table-responsive">
                 <table class="table bordered-table mb-0 w-100" id="dataTable">
                     <thead>
@@ -327,6 +327,88 @@ document.addEventListener("DOMContentLoaded", function() {
         @else
             <div class="text-center py-20">
                 <p class="text-gray-500">Доноры не найдены. <a href="{{ route('projects.pages.donors.create', [$project, $page]) }}">Добавить первого донора</a>.</p>
+            </div>
+        @endif
+    </div>
+</div>
+
+<!-- Keywords Section -->
+<div class="card basic-data-table pages-table mt-4">
+    <div class="card-header border-bottom bg-base py-16 px-24 d-flex align-items-center flex-wrap gap-3 justify-content-between">
+        <div class="d-flex align-items-center flex-wrap gap-3">
+            <h5 class="card-title mb-0">Ключевые слова для страницы: {{ $page->url }}</h5>
+        </div>
+        <div class="d-flex align-items-center flex-wrap gap-3">
+            <a href="{{ route('projects.pages.keywords.create', [$project, $page]) }}" class="btn btn-primary">Добавить ключевое слово</a>
+        </div>
+    </div>
+    <div class="card-body p-24">
+        @if(session('success'))
+            <div class="alert alert-success">{{ session('success') }}</div>
+        @endif
+
+        @if($page->keywords->count() > 0)
+            <div class="table-responsive">
+                <table class="table bordered-table mb-0 w-100">
+                    <thead>
+                        <tr>
+                            <th scope="col" style="width: 60px;">ID</th>
+                            <th scope="col">Ключевое слово</th>
+                            <th scope="col">Основное</th>
+                            <th scope="col">Частота</th>
+                            <th scope="col">CPC</th>
+                            <th scope="col">Сложность</th>
+                            <th scope="col">Позиция</th>
+                            <th scope="col">Лучшая позиция</th>
+                            <th scope="col">Тренд</th>
+                            <th scope="col">Регион</th>
+                            <th scope="col">Фактический URL</th>
+                            <th scope="col">Последняя проверка</th>
+                            <th scope="col" style="width: 140px;">Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($page->keywords as $keyword)
+                            <tr>
+                                <td>{{ $keyword->id }}</td>
+                                <td>{{ $keyword->keyword }}</td>
+                                <td>
+                                    <span class="badge bg-{{ $keyword->is_main ? 'success' : 'secondary' }}">
+                                        {{ $keyword->is_main ? 'Да' : 'Нет' }}
+                                    </span>
+                                </td>
+                                <td>{{ $keyword->volume ?? '-' }}</td>
+                                <td>{{ $keyword->cpc ? number_format($keyword->cpc, 2) . ' ₽' : '-' }}</td>
+                                <td>{{ $keyword->difficulty ?? '-' }}</td>
+                                <td>{{ $keyword->current_position ?? '-' }}</td>
+                                <td>{{ $keyword->best_position ?? '-' }}</td>
+                                <td>{{ $keyword->trend ?? '-' }}</td>
+                                <td>{{ $keyword->region ?? '-' }}</td>
+                                <td>{{ $keyword->actual_url ?? '-' }}</td>
+                                <td>{{ $keyword->last_tracked_at ? $keyword->last_tracked_at->format('d.m.Y H:i') : '-' }}</td>
+                                <td>
+                                    <a href="{{ route('projects.pages.keywords.show', [$project, $page, $keyword]) }}" class="w-32-px h-32-px bg-primary-light text-primary-600 rounded-circle d-inline-flex align-items-center justify-content-center">
+                                        <iconify-icon icon="iconamoon:eye-light"></iconify-icon>
+                                    </a>
+                                    <a href="{{ route('projects.pages.keywords.edit', [$project, $page, $keyword]) }}" class="w-32-px h-32-px bg-success-focus text-success-main rounded-circle d-inline-flex align-items-center justify-content-center">
+                                        <iconify-icon icon="lucide:edit"></iconify-icon>
+                                    </a>
+                                    <form action="{{ route('projects.pages.keywords.destroy', [$project, $page, $keyword]) }}" method="POST" class="d-inline" onsubmit="return confirm('Вы уверены, что хотите удалить это ключевое слово?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="w-32-px h-32-px bg-danger-focus text-danger-main rounded-circle d-inline-flex align-items-center justify-content-center border-0">
+                                            <iconify-icon icon="mingcute:delete-2-line"></iconify-icon>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @else
+            <div class="text-center py-20">
+                <p class="text-gray-500">Ключевые слова не найдены. <a href="{{ route('projects.pages.keywords.create', [$project, $page]) }}">Добавить первое ключевое слово</a>.</p>
             </div>
         @endif
     </div>

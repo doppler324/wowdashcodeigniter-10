@@ -108,6 +108,22 @@ class Page extends Model
     }
 
     /**
+     * Get the keywords for the page.
+     */
+    public function keywords()
+    {
+        return $this->hasMany(Keyword::class);
+    }
+
+    /**
+     * Get the main keyword for the page.
+     */
+    public function mainKeyword()
+    {
+        return $this->hasOne(Keyword::class)->where('is_main', true);
+    }
+
+    /**
      * Get the number of incoming links.
      */
     public function getIncomingLinksCountAttribute()

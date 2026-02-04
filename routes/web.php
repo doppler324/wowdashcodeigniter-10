@@ -211,5 +211,18 @@ Route::prefix('projects')->group(function () {
                  Route::delete('/{donor}', 'destroy')->name('projects.pages.donors.destroy');
              });
          });
+
+         // Keywords (nested under pages)
+         Route::prefix('{page}/keywords')->group(function () {
+             Route::controller(KeywordsController::class)->group(function () {
+                 Route::get('/', 'index')->name('projects.pages.keywords.index');
+                 Route::get('/create', 'create')->name('projects.pages.keywords.create');
+                 Route::post('/', 'store')->name('projects.pages.keywords.store');
+                 Route::get('/{keyword}', 'show')->name('projects.pages.keywords.show');
+                 Route::get('/{keyword}/edit', 'edit')->name('projects.pages.keywords.edit');
+                 Route::put('/{keyword}', 'update')->name('projects.pages.keywords.update');
+                 Route::delete('/{keyword}', 'destroy')->name('projects.pages.keywords.destroy');
+             });
+         });
     });
 });
