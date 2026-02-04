@@ -19,7 +19,6 @@ class Page extends Model
         'url',
         'type',
         'title',
-        'keywords',
         'status_code',
         'is_indexable',
     ];

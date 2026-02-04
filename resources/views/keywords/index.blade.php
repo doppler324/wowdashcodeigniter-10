@@ -1,29 +1,34 @@
 @extends('layout.layout')
 
+@php
+$title = 'Ключевые слова';
+$subTitle = 'Список всех ключевых слов';
+@endphp
+
 @section('content')
 <div class="container-fluid">
-    <h1 class="h3 mb-4 text-gray-800">Keywords</h1>
+    <h1 class="h3 mb-4 text-gray-800">Ключевые слова</h1>
 
     <div class="card shadow mb-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">All Keywords</h6>
+            <h6 class="m-0 font-weight-bold text-primary">Все ключевые слова</h6>
         </div>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
                     <thead>
                         <tr>
-                            <th>Keyword</th>
-                            <th>Page</th>
-                            <th>Main</th>
-                            <th>Volume</th>
+                            <th>Ключевое слово</th>
+                            <th>Страница</th>
+                            <th>Основное</th>
+                            <th>Частота</th>
                             <th>CPC</th>
-                            <th>Difficulty</th>
-                            <th>Position</th>
-                            <th>Trend</th>
-                            <th>Region</th>
-                            <th>Last Tracked</th>
-                            <th>Actions</th>
+                            <th>Сложность</th>
+                            <th>Позиция</th>
+                            <th>Тренд</th>
+                            <th>Регион</th>
+                            <th>Последний трек</th>
+                            <th>Действия</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -31,7 +36,7 @@
                         <tr>
                             <td>{{ $keyword->keyword }}</td>
                             <td>{{ $keyword->page->url }}</td>
-                            <td>{{ $keyword->is_main ? 'Yes' : 'No' }}</td>
+                            <td>{{ $keyword->is_main ? 'Да' : 'Нет' }}</td>
                             <td>{{ $keyword->volume }}</td>
                             <td>{{ $keyword->cpc }}</td>
                             <td>{{ $keyword->difficulty }}</td>

@@ -16,6 +16,7 @@ use App\Http\Controllers\UsersController;
 use App\Http\Controllers\ProjectsController;
 use App\Http\Controllers\PagesController;
 use App\Http\Controllers\DonorController;
+use App\Http\Controllers\KeywordsController;
 
 
 Route::controller(DashboardController::class)->group(function () {

@@ -20,7 +20,7 @@ class KeywordsController extends Controller
     /**
      * Show the form for creating a new keyword.
      */
-    public function create(Page $page)
+    public function create($project, Page $page)
     {
         return view('keywords.create', compact('page'));
     }
@@ -28,7 +28,7 @@ class KeywordsController extends Controller
     /**
      * Store a newly created keyword in storage.
      */
-    public function store(Request $request, Page $page)
+    public function store(Request $request, $project, Page $page)
     {
         $validated = $request->validate([
             'keyword' => 'required|string|max:255',
@@ -53,14 +53,14 @@ class KeywordsController extends Controller
 
         $page->keywords()->create($validated);
 
-        return redirect()->route('pages.show', $page)
+        return redirect()->route('projects.pages.show', [$page->project, $page])
             ->with('success', 'Keyword created successfully.');
     }
 
     /**
      * Display the specified keyword.
      */
-    public function show(Keyword $keyword)
+    public function show($project, $page, Keyword $keyword)
     {
         $keyword->load('page');
         return view('keywords.show', compact('keyword'));
@@ -69,7 +69,7 @@ class KeywordsController extends Controller
     /**
      * Show the form for editing the specified keyword.
      */
-    public function edit(Keyword $keyword)
+    public function edit($project, $page, Keyword $keyword)
     {
         $keyword->load('page');
         return view('keywords.edit', compact('keyword'));
@@ -78,7 +78,7 @@ class KeywordsController extends Controller
     /**
      * Update the specified keyword in storage.
      */
-    public function update(Request $request, Keyword $keyword)
+    public function update(Request $request, $project, $page, Keyword $keyword)
     {
         $validated = $request->validate([
             'keyword' => 'required|string|max:255',
@@ -103,19 +103,19 @@ class KeywordsController extends Controller
 
         $keyword->update($validated);
 
-        return redirect()->route('pages.show', $keyword->page)
+        return redirect()->route('projects.pages.show', [$keyword->page->project, $keyword->page])
             ->with('success', 'Keyword updated successfully.');
     }
 
     /**
      * Remove the specified keyword from storage.
      */
-    public function destroy(Keyword $keyword)
+    public function destroy($project, $page, Keyword $keyword)
     {
         $page = $keyword->page;
         $keyword->delete();
 
-        return redirect()->route('pages.show', $page)
+        return redirect()->route('projects.pages.show', [$page->project, $page])
             ->with('success', 'Keyword deleted successfully.');
     }
 }

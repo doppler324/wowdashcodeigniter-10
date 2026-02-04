@@ -1,5 +1,10 @@
 @extends('layout.layout')
 
+@php
+$title = 'Добавить ключевое слово';
+$subTitle = 'Создание нового ключевого слова для страницы';
+@endphp
+
 @section('content')
 <div class="container-fluid">
     <h1 class="h3 mb-4 text-gray-800">Create Keyword</h1>
@@ -21,7 +26,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="is_main">Main Keyword</label>
+                    <label for="is_main">Основное ключевое слово</label>
                     <input type="checkbox" name="is_main" id="is_main" value="1" {{ old('is_main') ? 'checked' : '' }}>
                 </div>
 
