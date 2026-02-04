@@ -21,6 +21,13 @@ class DonorController extends Controller
         return view('donors.index', compact('project', 'donors'));
     }
 
+    // Display all donors for a specific page
+    public function indexForPage(Project $project, Page $page)
+    {
+        $donors = $page->donors()->get();
+        return view('donors.index', compact('project', 'page', 'donors'));
+    }
+
     // Show the form for creating a new donor
     public function create(Project $project, Page $page)
     {

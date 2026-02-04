@@ -22,8 +22,36 @@ class Page extends Model
         'keywords',
         'status_code',
         'is_indexable',
-        'nesting_level',
     ];
+
+    /**
+     * Boot the model.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($page) {
+            $page->nesting_level = $page->calculateNestingLevel($page->parent_id);
+        });
+
+        static::updating(function ($page) {
+            $page->nesting_level = $page->calculateNestingLevel($page->parent_id);
+        });
+    }
+
+    /**
+     * Calculate nesting level based on parent.
+     */
+    protected function calculateNestingLevel($parentId)
+    {
+        if (!$parentId) {
+            return 0;
+        }
+
+        $parentPage = Page::find($parentId);
+        return $parentPage ? $parentPage->nesting_level + 1 : 0;
+    }
 
     /**
      * The attributes that should be cast to native types.

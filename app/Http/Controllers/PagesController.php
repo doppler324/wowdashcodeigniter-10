@@ -45,20 +45,11 @@ class PagesController extends Controller
             'keywords' => 'nullable|string',
             'status_code' => 'nullable|integer',
             'is_indexable' => 'boolean',
-            'nesting_level' => 'nullable|integer|min:0',
         ]);
 
         $data = $request->all();
         $data['project_id'] = $project->id;
         $data['is_indexable'] = $request->boolean('is_indexable', true);
-
-        // Автоматически рассчитываем уровень вложенности на основе родителя
-        if ($request->parent_id) {
-            $parentNestingLevel = Page::where('id', $request->parent_id)->value('nesting_level');
-            $data['nesting_level'] = $parentNestingLevel !== null ? $parentNestingLevel + 1 : 0;
-        } else {
-            $data['nesting_level'] = 0;
-        }
 
         Page::create($data);
 
@@ -119,24 +110,85 @@ class PagesController extends Controller
             'keywords' => 'nullable|string',
             'status_code' => 'nullable|integer',
             'is_indexable' => 'boolean',
-            'nesting_level' => 'nullable|integer|min:0',
         ]);
 
         $data = $request->all();
         $data['is_indexable'] = $request->boolean('is_indexable', true);
 
-        // Автоматически рассчитываем уровень вложенности на основе родителя
-        if ($request->parent_id) {
-            $parentNestingLevel = Page::where('id', $request->parent_id)->value('nesting_level');
-            $data['nesting_level'] = $parentNestingLevel !== null ? $parentNestingLevel + 1 : 0;
-        } else {
-            $data['nesting_level'] = 0;
-        }
-
         $page->update($data);
 
         return redirect()->route('projects.pages.index', $project)
             ->with('success', 'Страница успешно обновлена.');
+    }
+
+    /**
+     * Import pages from text input.
+     */
+    public function import(Request $request, Project $project)
+    {
+        $request->validate([
+            'pages_data' => 'required|string',
+        ]);
+
+        $pagesData = $request->input('pages_data');
+        $lines = explode(';', $pagesData);
+        $importedCount = 0;
+
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if (empty($line)) {
+                continue;
+            }
+
+            // Parse line - expecting format: URL|Title|Type|Keywords|ParentID
+            $parts = explode('|', $line);
+            $url = trim($parts[0]);
+
+            if (empty($url)) {
+                continue;
+            }
+
+            $title = isset($parts[1]) ? trim($parts[1]) : null;
+            $type = isset($parts[2]) ? trim($parts[2]) : 'card';
+            $keywords = isset($parts[3]) ? trim($parts[3]) : null;
+            $parentId = isset($parts[4]) ? trim($parts[4]) : null;
+
+            // Validate type
+            $type = in_array($type, ['home', 'section', 'card']) ? $type : 'card';
+
+            // Validate parent ID
+            if (!empty($parentId)) {
+                $parentPage = Page::where('project_id', $project->id)
+                    ->where('id', $parentId)
+                    ->first();
+                $validParentId = $parentPage ? $parentId : null;
+            } else {
+                $validParentId = null;
+            }
+
+            // Check if page already exists
+            $existingPage = Page::where('project_id', $project->id)
+                ->where('url', $url)
+                ->first();
+
+            if (!$existingPage) {
+                $pageData = [
+                    'project_id' => $project->id,
+                    'url' => $url,
+                    'title' => $title,
+                    'type' => $type,
+                    'keywords' => $keywords,
+                    'is_indexable' => true,
+                    'parent_id' => $validParentId,
+                ];
+
+                Page::create($pageData);
+                $importedCount++;
+            }
+        }
+
+        return redirect()->back()
+            ->with('success', "Успешно импортировано $importedCount страниц.");
     }
 
     /**

@@ -361,21 +361,20 @@ document.addEventListener("DOMContentLoaded", function() {
                     <div class="mb-3">
                         <label for="pagesData" class="form-label">Данные страниц</label>
                         <textarea class="form-control" id="pagesData" name="pages_data" rows="10" placeholder="Введите данные страниц через точку с запятой. Пример:
-/ (Главная) [home];
-/about (О нас) [section];
-/contact (Контакты) [card];
-/blog (Блог) [section];
-/blog/post-1 (Первый пост) [card];
-/blog/post-2 (Второй пост) [card]"></textarea>
-                        <div class="text-light">Формат строки: URL|Заголовок|Тип|Ключевые слова|ID родителя;<br>
+/about|О нас|section|о нас, компания;
+/contact|Контакты|card|контакты, обратная связь;
+/blog|Блог|section|блог, статьи;
+/blog/post-1|Первый пост|card|статья, первый пост;"></textarea>
+                        <div class="text-light mt-2">Формат строки: URL|Заголовок|Тип|Ключевые слова|ID родителя;<br>
 - URL (обязательно) - адрес страницы<br>
 - Заголовок (необязательно) - название страницы<br>
 - Тип (необязательно) - home/section/card (по умолчанию card)<br>
 - Ключевые слова (необязательно) - через запятую<br>
 - ID родителя (необязательно) - ID страницы-родителя<br>
 Пример: /about|О нас|section|о нас, компания;<br>
-Пример с родителем: /about/team|Команда|card|команда, сотрудники|2;<br>
+Пример с родителем: /about/team|Команда|card|команда, сотрудники|2;
                         </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>

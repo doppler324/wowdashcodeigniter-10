@@ -192,22 +192,24 @@ Route::prefix('projects')->group(function () {
             Route::get('/', 'index')->name('projects.pages.index');
             Route::get('/create', 'create')->name('projects.pages.create');
             Route::post('/', 'store')->name('projects.pages.store');
+            Route::post('/import', 'import')->name('projects.pages.import');
             Route::get('/{page}', 'show')->name('projects.pages.show');
             Route::get('/{page}/edit', 'edit')->name('projects.pages.edit');
             Route::put('/{page}', 'update')->name('projects.pages.update');
             Route::delete('/{page}', 'destroy')->name('projects.pages.destroy');
         });
 
-        // Donors (nested under pages)
-        Route::prefix('{page}/donors')->group(function () {
-            Route::controller(DonorController::class)->group(function () {
-                Route::get('/create', 'create')->name('projects.pages.donors.create');
-                Route::post('/', 'store')->name('projects.pages.donors.store');
-                Route::get('/{donor}', 'show')->name('projects.pages.donors.show');
-                Route::get('/{donor}/edit', 'edit')->name('projects.pages.donors.edit');
-                Route::put('/{donor}', 'update')->name('projects.pages.donors.update');
-                Route::delete('/{donor}', 'destroy')->name('projects.pages.donors.destroy');
-            });
-        });
+         // Donors (nested under pages)
+         Route::prefix('{page}/donors')->group(function () {
+             Route::controller(DonorController::class)->group(function () {
+                 Route::get('/', 'indexForPage')->name('projects.pages.donors.index');
+                 Route::get('/create', 'create')->name('projects.pages.donors.create');
+                 Route::post('/', 'store')->name('projects.pages.donors.store');
+                 Route::get('/{donor}', 'show')->name('projects.pages.donors.show');
+                 Route::get('/{donor}/edit', 'edit')->name('projects.pages.donors.edit');
+                 Route::put('/{donor}', 'update')->name('projects.pages.donors.update');
+                 Route::delete('/{donor}', 'destroy')->name('projects.pages.donors.destroy');
+             });
+         });
     });
 });

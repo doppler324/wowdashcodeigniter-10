@@ -13,10 +13,10 @@ $paddingLeft = $page->nesting_level * 10;
     </td>
     <td>{{ $page->id }}</td>
     <td class="tree-cell">
-        @for($i = 0; $i < $page->nesting_level; $i++)
-            <div class="tree-line" style="left: {{ $i * 6 }}px;"></div>
-        @endfor
         @if($page->nesting_level > 0)
+            @for($i = 0; $i < $page->nesting_level; $i++)
+                <div class="tree-line" style="left: {{ $i * 6 }}px;"></div>
+            @endfor
             <div class="tree-corner" style="left: {{ ($page->nesting_level - 1) * 6 }}px;"></div>
         @endif
         <div style="padding-left: {{ $page->nesting_level * 6 }}px;">
