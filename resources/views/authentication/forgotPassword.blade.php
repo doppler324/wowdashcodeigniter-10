@@ -63,11 +63,11 @@
                     <button type="button" class="btn btn-primary text-sm btn-sm px-12 py-16 w-100 radius-12 mt-32" data-bs-toggle="modal" data-bs-target="#exampleModal">Continue</button>
 
                     <div class="text-center">
-                        <a href="{{ route('signIn') }}" class="text-primary-600 fw-bold mt-24">Back to Sign In</a>
+                        <a href="{{ route('login') }}" class="text-primary-600 fw-bold mt-24">Back to Sign In</a>
                     </div>
 
                     <div class="mt-120 text-center text-sm">
-                        <p class="mb-0">Already have an account? <a href="{{ route('signIn') }}" class="text-primary-600 fw-semibold">Sign In</a></p>
+                        <p class="mb-0">Already have an account? <a href="{{ route('login') }}" class="text-primary-600 fw-semibold">Sign In</a></p>
                     </div>
                 </form>
             </div>

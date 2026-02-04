@@ -269,7 +269,7 @@
                 </a>
                 <ul class="sidebar-submenu">
                     <li>
-                        <a href="{{ route('signIn') }}"><i class="ri-circle-fill circle-icon text-primary-600 w-auto"></i> Sign In</a>
+                        <a href="{{ route('login') }}"><i class="ri-circle-fill circle-icon text-primary-600 w-auto"></i> Sign In</a>
                     </li>
                     <li>
                         <a href="{{ route('signUp') }}"><i class="ri-circle-fill circle-icon text-warning-main w-auto"></i> Sign Up</a>

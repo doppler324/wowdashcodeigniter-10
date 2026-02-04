@@ -56,13 +56,13 @@ Route::prefix('aiapplication')->group(function () {
 Route::prefix('authentication')->group(function () {
     Route::controller(AuthenticationController::class)->group(function () {
         Route::get('/forgotpassword', 'forgotPassword')->name('forgotPassword');
-        Route::get('/signin', 'signIn')->name('signIn')->middleware('guest');
+        Route::get('/login', 'signIn')->name('login')->middleware('guest');
         Route::get('/signup', 'signUp')->name('signUp')->middleware('guest');
     });
 
     // POST маршруты для обработки аутентификации
     Route::controller(AuthController::class)->group(function () {
-        Route::post('/login', 'login')->name('login')->middleware('guest');
+        Route::post('/login', 'login')->name('login-post')->middleware('guest');
         Route::post('/register', 'register')->name('register')->middleware('guest');
         Route::post('/logout', 'logout')->name('logout')->middleware('auth');
     });
