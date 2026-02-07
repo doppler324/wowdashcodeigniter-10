@@ -63,7 +63,18 @@ $style = '
 }
 </style>
 ';
-$script = '<script>
+$script = '<script src="' . asset('assets/js/flatpickr.js') . '"></script>
+<script>
+    // Flat pickr or date picker js
+    function getDatePicker(receiveID) {
+        flatpickr(receiveID, {
+            enableTime: true,
+            dateFormat: "Y-m-d H:i",
+        });
+    }
+    getDatePicker("#startDate");
+</script>
+<script>
 // Функция для сворачивания/разворачивания дочерних элементов
 function toggleChildren(parentId) {
     const rows = document.querySelectorAll(`[data-parent-id="${parentId}"]`);
@@ -277,6 +288,50 @@ document.addEventListener("DOMContentLoaded", function() {
 </script>';
 @endphp
 
+<script>
+    // Массив всех активностей для быстрого доступа
+    const activitiesData = @json($activities);
+
+    // Функция для отображения деталей активности в правом блоке
+    function showActivityDetails(activityId) {
+        const activity = activitiesData.find(item => item.id === activityId);
+        const chatMessageList = document.querySelector(".chat-main .chat-message-list");
+
+        if (!activity) {
+            chatMessageList.innerHTML = `
+                <div class="p-24">
+                    <p class="text-gray-500">Активность не найдена</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Отображаем детали активности
+        chatMessageList.innerHTML = `
+            <div class="p-24">
+                <h5 class="text-primary-light fw-semibold mb-16">${activity.title}</h5>
+
+                <div class="mb-16">
+                    <span class="text-secondary-light text-sm">Дата: </span>
+                    <span class="text-primary-light">${activity.formatted_date}</span>
+                </div>
+
+                <div class="mb-16">
+                    <span class="text-secondary-light text-sm">Категория: </span>
+                    <span class="badge bg-primary">${activity.category}</span>
+                </div>
+
+                ${activity.description ? `
+                    <div class="mb-16">
+                        <span class="text-secondary-light text-sm">Описание: </span>
+                        <p class="text-primary-light mt-8">${activity.description}</p>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+</script>
+
 @section('content')
 
 <div class="card basic-data-table pages-table">
@@ -344,6 +399,117 @@ document.addEventListener("DOMContentLoaded", function() {
         @endif
     </div>
 </div>
+
+<!-- Tasks Block -->
+<div class="row gy-4 mt-32">
+    <div class="col-xxl-5 col-lg-5">
+        <div class="card h-100 p-0">
+            <div class="card-body p-24">
+                <button type="button" class="btn btn-primary text-sm btn-sm px-12 py-12 w-100 radius-8 d-flex align-items-center gap-2 mb-32" data-bs-toggle="modal" data-bs-target="#exampleModal">
+                    <iconify-icon icon="fa6-regular:square-plus" class="icon text-lg line-height-1"></iconify-icon>
+                    Add Task
+                </button>
+
+                <div class="mt-32">
+                    @foreach($activities as $activity)
+                        <div class="event-item d-flex align-items-center justify-content-between gap-4 pb-16 mb-16 border border-start-0 border-end-0 border-top-0">
+                            <div class="">
+                                <div class="d-flex align-items-center gap-10">
+                                    <span class="w-12-px h-12-px bg-warning-600 rounded-circle fw-medium"></span>
+                                    <span class="text-secondary-light">{{ $activity->event_date->format('d.m.Y H:i') }}</span>
+                                </div>
+                                <span class="text-primary-light fw-semibold text-md mt-4">{{ $activity->title }}</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <button type="button" class="w-32-px h-32-px bg-primary-light text-primary-600 rounded-circle d-inline-flex align-items-center justify-content-center" onclick="showActivityDetails({{ $activity->id }})">
+                                    <iconify-icon icon="iconamoon:eye-light"></iconify-icon>
+                                </button>
+                                <a href="{{ route('projects.activities.edit', [$project, $activity]) }}" class="w-32-px h-32-px bg-success-focus text-success-main rounded-circle d-inline-flex align-items-center justify-content-center">
+                                    <iconify-icon icon="lucide:edit"></iconify-icon>
+                                </a>
+                                <form action="{{ route('projects.activities.destroy', [$project, $activity]) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this task?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="w-32-px h-32-px bg-danger-focus text-danger-main rounded-circle d-inline-flex align-items-center justify-content-center border-0">
+                                        <iconify-icon icon="mingcute:delete-2-line"></iconify-icon>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Block from Chat -->
+    <div class="col-xxl-7 col-lg-7">
+        <div class="chat-main card h-100">
+            <div class="chat-message-list">
+                <!-- Пустая область для текста -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Add Task -->
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog modal-dialog-centered">
+        <div class="modal-content radius-16 bg-base">
+            <div class="modal-header py-16 px-24 border border-top-0 border-start-0 border-end-0">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Add New Task</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-24">
+                <form action="{{ route('projects.activities.store', $project) }}" method="POST">
+                    @csrf
+                    <div class="row">
+                        <div class="col-12 mb-20">
+                            <label class="form-label fw-semibold text-primary-light text-sm mb-8">Task Title : </label>
+                            <input type="text" class="form-control radius-8" name="title" placeholder="Enter Task Title ">
+                        </div>
+                        <div class="col-md-6 mb-20">
+                            <label for="startDate" class="form-label fw-semibold text-primary-light text-sm mb-8">Start Date</label>
+                            <div class=" position-relative">
+                                <input class="form-control radius-8 bg-base" id="startDate" type="text" name="event_date" placeholder="03/12/2024, 10:30 AM">
+                                <span class="position-absolute end-0 top-50 translate-middle-y me-12 line-height-1">
+                                    <iconify-icon icon="solar:calendar-linear" class="icon text-lg"></iconify-icon>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-20">
+                            <label for="endDate" class="form-label fw-semibold text-primary-light text-sm mb-8">Category</label>
+                            <select class="form-select" id="category" name="category">
+                                <option value="">Select Category</option>
+                                <option value="content">Content</option>
+                                <option value="links">Links</option>
+                                <option value="technical">Technical</option>
+                                <option value="meta">Meta Tags</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-12 mb-20">
+                            <label for="desc" class="form-label fw-semibold text-primary-light text-sm mb-8">Description</label>
+                            <textarea class="form-control" id="desc" name="description" rows="4" cols="50" placeholder="Write some text"></textarea>
+                        </div>
+
+                        <div class="d-flex align-items-center justify-content-center gap-3 mt-24">
+                            <button type="reset" class="border border-danger-600 bg-hover-danger-200 text-danger-600 text-md px-40 py-11 radius-8">
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn btn-primary border border-primary-600 text-md px-24 py-12 radius-8">
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 
 @endsection
 

@@ -26,8 +26,12 @@ $subTitle = 'Создание нового ключевого слова для 
                 </div>
 
                 <div class="form-group">
-                    <label for="is_main">Основное ключевое слово</label>
-                    <input type="checkbox" name="is_main" id="is_main" value="1" {{ old('is_main') ? 'checked' : '' }}>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="is_main" id="is_main" value="1" {{ old('is_main') ? 'checked' : '' }}>
+                        <label class="form-check-label" for="is_main">
+                            Основное ключевое слово
+                        </label>
+                    </div>
                 </div>
 
                 <div class="form-group">

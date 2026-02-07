@@ -3,16 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Models\Project;
+use App\Models\Activity;
 use Illuminate\Http\Request;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class ProjectsController extends Controller
 {
+    use AuthorizesRequests;
     /**
      * Display a listing of the projects.
      */
     public function index()
     {
-        $projects = Project::all();
+        $projects = auth()->user()->projects;
         return view('projects.index', compact('projects'));
     }
 
@@ -35,7 +38,7 @@ class ProjectsController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        Project::create($request->all());
+        auth()->user()->projects()->create($request->all());
 
         return redirect()->route('projects.index')
             ->with('success', 'Проект успешно создан.');
@@ -46,8 +49,11 @@ class ProjectsController extends Controller
      */
     public function show(Project $project)
     {
+        $this->authorize('view', $project);
+
         $pages = $project->pages()->get();
-        return view('projects.show', compact('project', 'pages'));
+        $activities = $project->activities()->orderBy('event_date', 'desc')->get();
+        return view('projects.show', compact('project', 'pages', 'activities'));
     }
 
     /**
@@ -55,6 +61,8 @@ class ProjectsController extends Controller
      */
     public function edit(Project $project)
     {
+        $this->authorize('update', $project);
+
         return view('projects.edit', compact('project'));
     }
 
@@ -63,6 +71,8 @@ class ProjectsController extends Controller
      */
     public function update(Request $request, Project $project)
     {
+        $this->authorize('update', $project);
+
         $request->validate([
             'name' => 'required|string|max:255',
             'domain' => 'nullable|string|max:255',
@@ -80,6 +90,8 @@ class ProjectsController extends Controller
      */
     public function destroy(Project $project)
     {
+        $this->authorize('delete', $project);
+
         $project->delete();
 
         return redirect()->route('projects.index')

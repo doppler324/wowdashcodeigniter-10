@@ -17,6 +17,7 @@ use App\Http\Controllers\ProjectsController;
 use App\Http\Controllers\PagesController;
 use App\Http\Controllers\DonorController;
 use App\Http\Controllers\KeywordsController;
+use App\Http\Controllers\ActivitiesController;
 
 
 Route::controller(DashboardController::class)->group(function () {
@@ -168,7 +169,7 @@ Route::prefix('users')->group(function () {
     });
 });
 
-// Projects
+    // Projects
 Route::prefix('projects')->group(function () {
     Route::controller(ProjectsController::class)->group(function () {
         Route::get('/', 'index')->name('projects.index');
@@ -178,6 +179,18 @@ Route::prefix('projects')->group(function () {
         Route::get('/{project}/edit', 'edit')->name('projects.edit');
         Route::put('/{project}', 'update')->name('projects.update');
         Route::delete('/{project}', 'destroy')->name('projects.destroy');
+    });
+
+    // Activities (nested under project - general project activities)
+    Route::prefix('{project}/activities')->group(function () {
+        Route::controller(ActivitiesController::class)->group(function () {
+            Route::get('/', 'index')->name('projects.activities.index');
+            Route::get('/create', 'create')->name('projects.activities.create');
+            Route::post('/', 'store')->name('projects.activities.store');
+            Route::get('/{activity}/edit', 'edit')->name('projects.activities.edit');
+            Route::put('/{activity}', 'update')->name('projects.activities.update');
+            Route::delete('/{activity}', 'destroy')->name('projects.activities.destroy');
+        });
     });
 
     // Donors (nested under project - all donors)
@@ -223,6 +236,18 @@ Route::prefix('projects')->group(function () {
                  Route::get('/{keyword}/edit', 'edit')->name('projects.pages.keywords.edit');
                  Route::put('/{keyword}', 'update')->name('projects.pages.keywords.update');
                  Route::delete('/{keyword}', 'destroy')->name('projects.pages.keywords.destroy');
+             });
+         });
+
+         // Activities (nested under pages)
+         Route::prefix('{page}/activities')->group(function () {
+             Route::controller(ActivitiesController::class)->group(function () {
+                 Route::get('/', 'index')->name('projects.pages.activities.index');
+                 Route::get('/create', 'create')->name('projects.pages.activities.create');
+                 Route::post('/', 'store')->name('projects.pages.activities.store');
+                 Route::get('/{activity}/edit', 'edit')->name('projects.pages.activities.edit');
+                 Route::put('/{activity}', 'update')->name('projects.pages.activities.update');
+                 Route::delete('/{activity}', 'destroy')->name('projects.pages.activities.destroy');
              });
          });
     });

@@ -5,14 +5,18 @@ namespace App\Http\Controllers;
 use App\Models\Page;
 use App\Models\Project;
 use Illuminate\Http\Request;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class PagesController extends Controller
 {
+    use AuthorizesRequests;
     /**
      * Display a listing of the pages for a project.
      */
     public function index(Project $project)
     {
+        $this->authorize('view', $project);
+
         $pages = $project->pages()->get();
         return view('pages.index', compact('project', 'pages'));
     }
@@ -22,6 +26,8 @@ class PagesController extends Controller
      */
     public function create(Project $project)
     {
+        $this->authorize('update', $project);
+
         // Получаем только разделы (section) и главную (home) для выбора родителя
         $potentialParents = $project->pages()
             ->whereIn('type', ['home', 'section'])
@@ -37,6 +43,8 @@ class PagesController extends Controller
      */
     public function store(Request $request, Project $project)
     {
+        $this->authorize('update', $project);
+
         $request->validate([
             'url' => 'required|string|max:2048',
             'type' => 'required|in:home,section,card',
@@ -62,6 +70,8 @@ class PagesController extends Controller
      */
     public function show(Project $project, Page $page)
     {
+        $this->authorize('view', $project);
+
         $page->load('donors', 'keywords');
         return view('pages.show', compact('project', 'page'));
     }
@@ -71,6 +81,8 @@ class PagesController extends Controller
      */
     public function edit(Project $project, Page $page)
     {
+        $this->authorize('update', $project);
+
         // Получаем только разделы (section) и главную (home) для выбора родителя
         // Исключаем текущую страницу и её дочерние элементы из списка потенциальных родителей
         $potentialParents = $project->pages()
@@ -102,6 +114,8 @@ class PagesController extends Controller
      */
     public function update(Request $request, Project $project, Page $page)
     {
+        $this->authorize('update', $project);
+
         $request->validate([
             'url' => 'required|string|max:2048',
             'type' => 'required|in:home,section,card',
@@ -126,6 +140,8 @@ class PagesController extends Controller
      */
     public function import(Request $request, Project $project)
     {
+        $this->authorize('update', $project);
+
         $request->validate([
             'pages_data' => 'required|string',
         ]);
@@ -196,6 +212,8 @@ class PagesController extends Controller
      */
     public function destroy(Project $project, Page $page)
     {
+        $this->authorize('delete', $project);
+
         $page->delete();
 
         return redirect()->route('projects.pages.index', $project)

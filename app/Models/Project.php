@@ -15,6 +15,7 @@ class Project extends Model
         'name',
         'description',
         'domain',
+        'user_id',
     ];
 
     /**
@@ -28,10 +29,26 @@ class Project extends Model
     ];
 
     /**
+     * Get the user that owns the project.
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
      * Get the pages for the project.
      */
     public function pages()
     {
         return $this->hasMany(Page::class);
+    }
+
+    /**
+     * Get the activities for the project.
+     */
+    public function activities()
+    {
+        return $this->hasMany(Activity::class);
     }
 }

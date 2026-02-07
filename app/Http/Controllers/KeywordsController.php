@@ -4,32 +4,44 @@ namespace App\Http\Controllers;
 
 use App\Models\Keyword;
 use App\Models\Page;
+use App\Models\Project;
 use Illuminate\Http\Request;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class KeywordsController extends Controller
 {
+    use AuthorizesRequests;
     /**
      * Display a listing of the keywords.
      */
     public function index()
     {
-        $keywords = Keyword::with('page')->get();
+        $keywords = Keyword::with('page.project')
+            ->whereHas('page.project', function ($query) {
+                $query->where('user_id', auth()->id());
+            })
+            ->get();
+
         return view('keywords.index', compact('keywords'));
     }
 
     /**
      * Show the form for creating a new keyword.
      */
-    public function create($project, Page $page)
+    public function create(Project $project, Page $page)
     {
+        $this->authorize('update', $project);
+
         return view('keywords.create', compact('page'));
     }
 
     /**
      * Store a newly created keyword in storage.
      */
-    public function store(Request $request, $project, Page $page)
+    public function store(Request $request, Project $project, Page $page)
     {
+        $this->authorize('update', $project);
+
         $validated = $request->validate([
             'keyword' => 'required|string|max:255',
             'is_main' => 'boolean',
@@ -60,8 +72,10 @@ class KeywordsController extends Controller
     /**
      * Display the specified keyword.
      */
-    public function show($project, $page, Keyword $keyword)
+    public function show(Project $project, Page $page, Keyword $keyword)
     {
+        $this->authorize('view', $project);
+
         $keyword->load('page');
         return view('keywords.show', compact('keyword'));
     }
@@ -69,8 +83,10 @@ class KeywordsController extends Controller
     /**
      * Show the form for editing the specified keyword.
      */
-    public function edit($project, $page, Keyword $keyword)
+    public function edit(Project $project, Page $page, Keyword $keyword)
     {
+        $this->authorize('update', $project);
+
         $keyword->load('page');
         return view('keywords.edit', compact('keyword'));
     }
@@ -78,8 +94,10 @@ class KeywordsController extends Controller
     /**
      * Update the specified keyword in storage.
      */
-    public function update(Request $request, $project, $page, Keyword $keyword)
+    public function update(Request $request, Project $project, Page $page, Keyword $keyword)
     {
+        $this->authorize('update', $project);
+
         $validated = $request->validate([
             'keyword' => 'required|string|max:255',
             'is_main' => 'boolean',
@@ -110,8 +128,10 @@ class KeywordsController extends Controller
     /**
      * Remove the specified keyword from storage.
      */
-    public function destroy($project, $page, Keyword $keyword)
+    public function destroy(Project $project, Page $page, Keyword $keyword)
     {
+        $this->authorize('delete', $project);
+
         $page = $keyword->page;
         $keyword->delete();
 

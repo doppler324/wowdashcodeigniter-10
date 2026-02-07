@@ -99,6 +99,14 @@ class Page extends Model
     }
 
     /**
+     * Get the activities for the page.
+     */
+    public function activities()
+    {
+        return $this->hasMany(Activity::class);
+    }
+
+    /**
      * Check if page has children.
      */
     public function hasChildren(): bool
@@ -120,6 +128,14 @@ class Page extends Model
     public function mainKeyword()
     {
         return $this->hasOne(Keyword::class)->where('is_main', true);
+    }
+
+    /**
+     * Get the count of keywords for the page.
+     */
+    public function getKeywordsCountAttribute()
+    {
+        return $this->keywords()->count();
     }
 
     /**
