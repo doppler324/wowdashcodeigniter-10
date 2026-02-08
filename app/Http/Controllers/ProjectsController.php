@@ -53,7 +53,8 @@ class ProjectsController extends Controller
 
         $pages = $project->pages()->get();
         $activities = $project->activities()->orderBy('event_date', 'desc')->get();
-        return view('projects.show', compact('project', 'pages', 'activities'));
+        $keywords = $project->keywords()->get();
+        return view('projects.show', compact('project', 'pages', 'activities', 'keywords'));
     }
 
     /**

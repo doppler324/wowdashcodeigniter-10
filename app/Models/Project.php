@@ -51,4 +51,12 @@ class Project extends Model
     {
         return $this->hasMany(Activity::class);
     }
+
+    /**
+     * Get all keywords for the project through pages.
+     */
+    public function keywords()
+    {
+        return $this->hasManyThrough(Keyword::class, Page::class);
+    }
 }
