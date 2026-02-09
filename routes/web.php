@@ -18,6 +18,7 @@ use App\Http\Controllers\PagesController;
 use App\Http\Controllers\DonorController;
 use App\Http\Controllers\KeywordsController;
 use App\Http\Controllers\ActivitiesController;
+use App\Http\Controllers\YandexMetrikaController;
 
 
 Route::controller(DashboardController::class)->group(function () {
@@ -141,6 +142,8 @@ Route::prefix('invoice')->group(function () {
 // Settings
 Route::prefix('settings')->group(function () {
     Route::controller(SettingsController::class)->group(function () {
+        Route::get('/', 'index')->name('settings');
+        Route::post('/', 'index')->name('settings.store');
         Route::get('/company', 'company')->name('company');
         Route::get('/currencies', 'currencies')->name('currencies');
         Route::get('/language', 'language')->name('language');
@@ -179,6 +182,13 @@ Route::prefix('projects')->group(function () {
         Route::get('/{project}/edit', 'edit')->name('projects.edit');
         Route::put('/{project}', 'update')->name('projects.update');
         Route::delete('/{project}', 'destroy')->name('projects.destroy');
+    });
+
+    // Keywords (nested under project - all keywords in project)
+    Route::prefix('{project}/keywords')->group(function () {
+        Route::controller(KeywordsController::class)->group(function () {
+            Route::get('/', 'indexForProject')->name('projects.keywords.index');
+        });
     });
 
     // Activities (nested under project - general project activities)
@@ -248,7 +258,14 @@ Route::prefix('projects')->group(function () {
                  Route::get('/{activity}/edit', 'edit')->name('projects.pages.activities.edit');
                  Route::put('/{activity}', 'update')->name('projects.pages.activities.update');
                  Route::delete('/{activity}', 'destroy')->name('projects.pages.activities.destroy');
-             });
-         });
+          });
+     });
+});
+
+// Яндекс Метрика
+Route::prefix('yandex-metrika')->group(function () {
+    Route::controller(YandexMetrikaController::class)->group(function () {
+        Route::get('/data', 'getData')->name('yandex.metrika.data')->middleware('auth');
     });
+});
 });

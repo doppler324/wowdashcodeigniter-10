@@ -12,6 +12,22 @@ class KeywordsController extends Controller
 {
     use AuthorizesRequests;
     /**
+     * Display a listing of all keywords in the project.
+     */
+    public function indexForProject(Project $project)
+    {
+        $this->authorize('view', $project);
+
+        $keywords = Keyword::with('page')
+            ->whereHas('page.project', function ($query) use ($project) {
+                $query->where('id', $project->id);
+            })
+            ->get();
+
+        return view('keywords.index', compact('keywords', 'project'));
+    }
+
+    /**
      * Display a listing of the keywords.
      */
     public function index()

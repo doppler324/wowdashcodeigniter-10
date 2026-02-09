@@ -74,7 +74,86 @@ $style = '
 }
 </style>
 ';
-$script = '<script src="' . asset('assets/js/flatpickr.js') . '"></script>
+$script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></script>
+<script src="' . asset('assets/js/flatpickr.js') . '"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var options = {
+            series: [{
+                name: "Посещения",
+                data: ' . json_encode($chartData['data']) . '
+            }],
+            chart: {
+                height: 264,
+                type: "line",
+                colors: "#000",
+                zoom: {
+                    enabled: false
+                },
+                toolbar: {
+                    show: false
+                },
+            },
+            colors: ["#487FFF"],
+            dataLabels: {
+                enabled: true
+            },
+            stroke: {
+                curve: "straight",
+                width: 4,
+                color: "#000"
+            },
+            markers: {
+                size: 0,
+                strokeWidth: 3,
+                hover: {
+                    size: 8
+                }
+            },
+            grid: {
+                show: true,
+                borderColor: "#D1D5DB",
+                strokeDashArray: 3,
+                row: {
+                    colors: ["#f3f3f3", "transparent"],
+                    opacity: 0,
+                },
+            },
+            markers: {
+                colors: "#487FFF",
+                strokeWidth: 3,
+                size: 0,
+                hover: {
+                    size: 10
+                }
+            },
+            xaxis: {
+                categories: ' . json_encode($chartData['categories']) . ',
+                lines: {
+                    show: false
+                },
+                labels: {
+                    style: {
+                        fontSize: "14px"
+                    }
+                }
+            },
+            yaxis: {
+                labels: {
+                    formatter: function (value) {
+                        return value;
+                    },
+                    style: {
+                        fontSize: "14px"
+                    }
+                },
+            },
+        };
+
+        var chart = new ApexCharts(document.querySelector("#lineDataLabel"), options);
+        chart.render();
+    });
+</script>
 <script>
     // Flat pickr or date picker js
     function getDatePicker(receiveID) {
@@ -650,6 +729,16 @@ document.addEventListener("DOMContentLoaded", function() {
                     <p class="text-gray-500">Ключевые слова не найдены. Добавьте ключевые слова на страницы проекта.</p>
                 </div>
             @endif
+        </div>
+    </div>
+
+    <!-- Линейный график с метками данных -->
+    <div class="card h-100 p-0 radius-12 mt-32">
+        <div class="card-header border-bottom bg-base py-16 px-24">
+            <h6 class="text-lg fw-semibold mb-0">Линейный график с метками данных</h6>
+        </div>
+        <div class="card-body p-24">
+            <div id="lineDataLabel"></div>
         </div>
     </div>
 @endsection

@@ -17,6 +17,50 @@
                     <span>Проекты</span>
                 </a>
             </li>
+            @if (request()->routeIs('projects.*'))
+            @php
+                $currentProject = null;
+                if (request()->route('project')) {
+                    $currentProject = request()->route('project');
+                } elseif (request()->route('page')) {
+                    $page = \App\Models\Page::find(request()->route('page'));
+                    if ($page) {
+                        $currentProject = $page->project;
+                    }
+                } elseif (request()->route('keyword')) {
+                    $keyword = \App\Models\Keyword::find(request()->route('keyword'));
+                    if ($keyword && $keyword->page) {
+                        $currentProject = $keyword->page->project;
+                    }
+                } elseif (request()->route('donor')) {
+                    $donor = \App\Models\Donor::find(request()->route('donor'));
+                    if ($donor && $donor->page) {
+                        $currentProject = $donor->page->project;
+                    }
+                } elseif (request()->route('activity')) {
+                    $activity = \App\Models\Activity::find(request()->route('activity'));
+                    if ($activity && $activity->project) {
+                        $currentProject = $activity->project;
+                    } elseif ($activity && $activity->page) {
+                        $currentProject = $activity->page->project;
+                    }
+                }
+            @endphp
+            @if ($currentProject)
+            <li>
+                <a href="{{ route('projects.keywords.index', $currentProject) }}">
+                    <iconify-icon icon="mdi:format-list-bulleted-type" class="menu-icon"></iconify-icon>
+                    <span>Ключевые слова</span>
+                </a>
+            </li>
+            @endif
+            @endif
+            <li>
+                <a href="{{ route('settings') }}">
+                    <iconify-icon icon="icon-park-outline:setting-two" class="menu-icon"></iconify-icon>
+                    <span>Настройки</span>
+                </a>
+            </li>
             <li class="dropdown">
                 <a href="javascript:void(0)">
                     <iconify-icon icon="solar:home-smile-angle-outline" class="menu-icon"></iconify-icon>
