@@ -10,6 +10,13 @@ class ApiCache extends Model
     use HasFactory;
 
     /**
+     * Отключаем автоматическое управление timestamps (created_at, updated_at).
+     *
+     * @var bool
+     */
+    public $timestamps = false;
+
+    /**
      * Название таблицы в БД.
      *
      * @var string
