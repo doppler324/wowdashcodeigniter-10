@@ -78,7 +78,8 @@ $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></scri
 <script src="' . asset('assets/js/flatpickr.js') . '"></script>
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        var options = {
+        // График за месяц
+        var monthOptions = {
             series: [{
                 name: "Посещения",
                 data: ' . json_encode($chartData['data']) . '
@@ -86,7 +87,6 @@ $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></scri
             chart: {
                 height: 264,
                 type: "line",
-                colors: "#000",
                 zoom: {
                     enabled: false
                 },
@@ -98,40 +98,87 @@ $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></scri
             dataLabels: {
                 enabled: true
             },
-            stroke: {
-                curve: "straight",
-                width: 4,
-                color: "#000"
-            },
-            markers: {
-                size: 0,
-                strokeWidth: 3,
-                hover: {
-                    size: 8
-                }
-            },
-            grid: {
-                show: true,
-                borderColor: "#D1D5DB",
-                strokeDashArray: 3,
-                row: {
-                    colors: ["#f3f3f3", "transparent"],
-                    opacity: 0,
-                },
-            },
-            markers: {
-                colors: "#487FFF",
-                strokeWidth: 3,
-                size: 0,
-                hover: {
-                    size: 10
-                }
-            },
             xaxis: {
                 categories: ' . json_encode($chartData['categories']) . ',
-                lines: {
+                tickAmount: 5,
+            },
+            yaxis: {
+                title: {
+                    text: "Посещения"
+                },
+            },
+            stroke: {
+                width: 3
+            },
+            markers: {
+                size: 5,
+                colors: ["#487FFF"]
+            },
+            grid: {
+                strokeDashArray: 4
+            },
+            tooltip: {
+                y: {
+                    formatter: function(val) {
+                        return val + " посещений"
+                    }
+                }
+            }
+        };
+        var monthChart = new ApexCharts(document.querySelector("#lineMonthChart"), monthOptions);
+        monthChart.render();
+
+        // График за год
+        var yearOptions = {
+            series: [{
+                name: "Посещения",
+                data: ' . json_encode($yearlyChartData['data']) . '
+            }],
+            chart: {
+                height: 264,
+                type: "line",
+                zoom: {
+                    enabled: false
+                },
+                toolbar: {
                     show: false
                 },
+            },
+            colors: ["#28C76F"],
+            dataLabels: {
+                enabled: true
+            },
+            xaxis: {
+                categories: ' . json_encode($yearlyChartData['categories']) . ',
+                tickAmount: 6,
+            },
+            yaxis: {
+                title: {
+                    text: "Посещения"
+                },
+            },
+            stroke: {
+                width: 3
+            },
+            markers: {
+                size: 5,
+                colors: ["#28C76F"]
+            },
+            grid: {
+                strokeDashArray: 4
+            },
+            tooltip: {
+                y: {
+                    formatter: function(val) {
+                        return val + " посещений"
+                    }
+                }
+            }
+        };
+        var yearChart = new ApexCharts(document.querySelector("#lineYearChart"), yearOptions);
+        yearChart.render();
+    });
+</script>
                 labels: {
                     style: {
                         fontSize: "14px"
@@ -148,10 +195,61 @@ $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></scri
                     }
                 },
             },
+          };
+
+        // Инициализация графиков
+        var monthChart = new ApexCharts(document.querySelector("#lineMonthChart"), monthOptions);
+        monthChart.render();
+
+        var yearOptions = {
+            series: [{
+                name: "Посещения",
+                data: ' . json_encode($yearlyChartData['data']) . '
+            }],
+            chart: {
+                height: 264,
+                type: "line",
+                zoom: {
+                    enabled: false
+                },
+                toolbar: {
+                    show: false
+                },
+            },
+            colors: ["#28C76F"],
+            dataLabels: {
+                enabled: true
+            },
+            xaxis: {
+                categories: ' . json_encode($yearlyChartData['categories']) . ',
+                tickAmount: 6,
+            },
+            yaxis: {
+                title: {
+                    text: "Посещения"
+                },
+            },
+            stroke: {
+                width: 3
+            },
+            markers: {
+                size: 5,
+                colors: ["#28C76F"]
+            },
+            grid: {
+                strokeDashArray: 4
+            },
+            tooltip: {
+                y: {
+                    formatter: function(val) {
+                        return val + " посещений"
+                    }
+                }
+            }
         };
 
-        var chart = new ApexCharts(document.querySelector("#lineDataLabel"), options);
-        chart.render();
+        var yearChart = new ApexCharts(document.querySelector("#lineYearChart"), yearOptions);
+        yearChart.render();
     });
 </script>
 <script>
@@ -732,13 +830,23 @@ document.addEventListener("DOMContentLoaded", function() {
         </div>
     </div>
 
-    <!-- Линейный график с метками данных -->
+    <!-- Линейный график за месяц -->
     <div class="card h-100 p-0 radius-12 mt-32">
         <div class="card-header border-bottom bg-base py-16 px-24">
-            <h6 class="text-lg fw-semibold mb-0">Линейный график с метками данных</h6>
+            <h6 class="text-lg fw-semibold mb-0">Посещения за месяц</h6>
         </div>
         <div class="card-body p-24">
-            <div id="lineDataLabel"></div>
+            <div id="lineMonthChart"></div>
+        </div>
+    </div>
+
+    <!-- Линейный график за год -->
+    <div class="card h-100 p-0 radius-12 mt-32">
+        <div class="card-header border-bottom bg-base py-16 px-24">
+            <h6 class="text-lg fw-semibold mb-0">Посещения за год</h6>
+        </div>
+        <div class="card-body p-24">
+            <div id="lineYearChart"></div>
         </div>
     </div>
 @endsection

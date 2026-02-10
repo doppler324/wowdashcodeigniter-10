@@ -1,4 +1,4 @@
-    // =========================== Default Line Chart Start ===============================
+﻿    // =========================== Default Line Chart Start ===============================
     var options = {
         series: [{
             name: "This month",
@@ -97,7 +97,7 @@
     };
 
     var chart = new ApexCharts(document.querySelector("#defaultLineChart"), options);
-    chart.render();
+    // chart.render();
   // =========================== Default Line Chart End ===============================
 
   // =========================== Zoom able Line Chart End ===============================
@@ -227,7 +227,7 @@
     };
 
     var chart = new ApexCharts(document.querySelector(`#${chartId}`), options);
-    chart.render();
+    // chart.render();
   }
   createChartTwo('zoomAbleLineChart', '#487fff');
   // =========================== Zoom able Line Chart End ===============================
@@ -301,8 +301,8 @@
         },
     };
 
-    var chart = new ApexCharts(document.querySelector("#lineDataLabel"), options);
-    chart.render();
+    // var chart = new ApexCharts(document.querySelector("#lineDataLabel"), options);
+    // chart.render();
   // =========================== Line Chart With Data labels End ===============================
 
   // =========================== Double Line Chart Start ===============================
@@ -422,7 +422,7 @@
     };
 
     var chart = new ApexCharts(document.querySelector(`#${chartId}`), options);
-    chart.render();
+    // chart.render();
   }
   createLineChart('doubleLineChart', '#487fff');
   // =========================== Double Line Chart End ===============================
@@ -489,7 +489,7 @@
     };
 
     var chart = new ApexCharts(document.querySelector("#stepLineChart"), options);
-    chart.render();
+    // chart.render();
   // =========================== Step Line Chart End ===============================
 
     // =========================== Gradient Line Chart Start ===============================
@@ -585,6 +585,6 @@
     };
 
     var chart = new ApexCharts(document.querySelector("#gradientLineChart"), options);
-    chart.render();
+    // chart.render();
   // =========================== Gradient Line Chart End ===============================
 

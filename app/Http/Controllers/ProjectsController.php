@@ -33,12 +33,81 @@ class ProjectsController extends Controller
         $activities = $project->activities()->orderBy('event_date', 'desc')->get();
         $keywords = $project->keywords()->get();
         $chartData = $this->getChartData();
+        $yearlyChartData = $this->getYearlyChartData();
 
-        return view('projects.show', compact('project', 'pages', 'activities', 'keywords', 'chartData'));
+        return view('projects.show', compact('project', 'pages', 'activities', 'keywords', 'chartData', 'yearlyChartData'));
     }
 
     /**
-     * Get chart data from Yandex Metrika API.
+     * Get monthly chart data for last year.
+     */
+    private function getYearlyChartData()
+    {
+        try {
+            $settings = Setting::where('user_id', auth()->id())->first();
+
+            if (!$settings || empty($settings->yandex_metrika_token) || empty($settings->yandex_metrika_counter)) {
+                return $this->getMockYearlyChartData();
+            }
+
+            $yandexMetrikaService = new YandexMetrikaService($settings->yandex_metrika_token);
+
+            $date1 = now()->subYear()->format('Y-m-d');
+            $date2 = now()->format('Y-m-d');
+
+            $params = [
+                'ids' => $settings->yandex_metrika_counter,
+                'date1' => $date1,
+                'date2' => $date2,
+                'metrics' => $settings->yandex_metrika_metrics ?? 'ym:s:visits',
+                'dimensions' => 'ym:s:month',
+                'group' => 'month',
+            ];
+
+            \Illuminate\Support\Facades\Log::info('Calling Yandex Metrika API for yearly data with params: ' . json_encode($params));
+            $response = $yandexMetrikaService->getData($params);
+            \Illuminate\Support\Facades\Log::info('Yandex Metrika API yearly response: ' . json_encode($response));
+
+            return $this->formatYearlyChartData($response);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error fetching yearly chart data: ' . $e->getMessage());
+            return $this->getMockYearlyChartData();
+        }
+    }
+
+    /**
+     * Format yearly Yandex Metrika data.
+     */
+    private function formatYearlyChartData($response)
+    {
+        $categories = [];
+        $data = [];
+
+        if (isset($response['data'])) {
+            $dateValues = [];
+
+            foreach ($response['data'] as $item) {
+                $date = \Carbon\Carbon::parse($item['dimensions'][0]['name'])->format('M Y'); // Форматируем как "Jan 2024"
+                $visitCount = (int)array_sum($item['metrics'][0]);
+                $dateValues[$item['dimensions'][0]['name']] = ['date' => $date, 'value' => $visitCount];
+            }
+
+            ksort($dateValues);
+
+            foreach ($dateValues as $value) {
+                $categories[] = $value['date'];
+                $data[] = $value['value'];
+            }
+        }
+
+        return [
+            'categories' => $categories,
+            'data' => $data,
+        ];
+    }
+
+    /**
+     * Get chart data from Yandex Metrika API for last month.
      */
     private function getChartData()
     {
@@ -63,7 +132,7 @@ class ProjectsController extends Controller
                 'date2' => $date2,
                 'metrics' => $settings->yandex_metrika_metrics ?? 'ym:s:visits',
                 'dimensions' => $settings->yandex_metrika_dimensions ?? 'ym:s:date',
-                'group' => 1,
+                'group' => 'day',
             ];
 
             \Illuminate\Support\Facades\Log::info('Calling Yandex Metrika API with params: ' . json_encode($params));
@@ -78,7 +147,7 @@ class ProjectsController extends Controller
     }
 
     /**
-     * Format Yandex Metrika data for chart.
+     * Format Yandex Metrika data for monthly chart.
      */
     private function formatChartData($response)
     {
@@ -86,10 +155,19 @@ class ProjectsController extends Controller
         $data = [];
 
         if (isset($response['data'])) {
+            $dateValues = [];
+
             foreach ($response['data'] as $item) {
                 $date = \Carbon\Carbon::parse($item['dimensions'][0]['name'])->format('d.m');
-                $categories[] = $date;
-                $data[] = (int)$item['metrics'][0];
+                $visitCount = (int)array_sum($item['metrics'][0]);
+                $dateValues[$item['dimensions'][0]['name']] = ['date' => $date, 'value' => $visitCount];
+            }
+
+            ksort($dateValues);
+
+            foreach ($dateValues as $value) {
+                $categories[] = $value['date'];
+                $data[] = $value['value'];
             }
         }
 
@@ -100,7 +178,27 @@ class ProjectsController extends Controller
     }
 
     /**
-     * Get mock data if API is not available.
+     * Get mock yearly chart data.
+     */
+    private function getMockYearlyChartData()
+    {
+        $categories = [];
+        $data = [];
+
+        for ($i = 11; $i >= 0; $i--) {
+            $date = now()->subMonths($i)->format('M Y');
+            $categories[] = $date;
+            $data[] = rand(500, 2000);
+        }
+
+        return [
+            'categories' => $categories,
+            'data' => $data,
+        ];
+    }
+
+    /**
+     * Get mock monthly chart data.
      */
     private function getMockChartData()
     {

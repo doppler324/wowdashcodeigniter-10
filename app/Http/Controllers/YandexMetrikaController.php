@@ -54,7 +54,6 @@ class YandexMetrikaController extends Controller
                 'date2' => 'required|date|after_or_equal:date1', // Дата конца периода
                 'metrics' => 'required|string', // Метрики (например, "ym:s:visits,ym:s:pageviews")
                 'dimensions' => 'nullable|string', // Разбивка по меткам (например, "ym:s:date")
-                'group' => 'nullable|integer|min:1', // Группировка по временным интервалам (1 для дней)
             ]);
 
             // Переопределяем токен сервиса из настроек пользователя
