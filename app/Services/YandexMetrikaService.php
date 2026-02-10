@@ -9,18 +9,18 @@ use Illuminate\Support\Facades\Log;
 class YandexMetrikaService
 {
     /**
-     * Ключ для хранения токена Яндекс Метрики в конфигурации.
+     * URL API Яндекс Метрики для обычных запросов.
      *
      * @var string
      */
-    protected $token;
+    protected $apiUrl = 'https://api-metrika.yandex.net/stat/v1/data';
 
     /**
-     * URL API Яндекс Метрики (метод bytime).
+     * URL API Яндекс Метрики для запросов по времени.
      *
      * @var string
      */
-    protected $apiUrl = 'https://api-metrika.yandex.net/stat/v1/data/bytime';
+    protected $apiUrlByTime = 'https://api-metrika.yandex.net/stat/v1/data/bytime';
 
     /**
      * Время жизни кэша в минутах.
@@ -135,8 +135,11 @@ class YandexMetrikaService
      */
     protected function sendApiRequest(array $params): array
     {
+        // Выбираем API endpoint в зависимости от группировки
+        $apiUrl = $this->apiUrl;
+
         $response = Http::withToken($this->token)
-            ->get($this->apiUrl, $params);
+            ->get($apiUrl, $params);
 
         if (!$response->successful()) {
             throw new \Exception(
@@ -149,7 +152,7 @@ class YandexMetrikaService
     }
 
     /**
-     * Сохранение/обновление данных в кэше.
+     * Сохранение/обновление данных в кэш.
      *
      * @param string $requestHash Хеш запроса
      * @param array $response Ответ от API

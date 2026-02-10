@@ -17,6 +17,7 @@ class SettingsController extends Controller
             \Illuminate\Support\Facades\Log::info('POST data received: ' . json_encode($request->all()));
             // Валидация полей — делаем все поля nullable, чтобы не требовать их из других вкладок
             $validated = $request->validate([
+<<<<<<< Updated upstream
                 'api_url' => 'nullable|url',
                 'groupby' => 'nullable|integer|min:1|max:100',
                 'lr' => 'nullable|integer',
@@ -24,16 +25,11 @@ class SettingsController extends Controller
                 'lang' => 'nullable|string|in:ru,uk,en,tr,be,kk',
                 'device' => 'nullable|string|in:desktop,tablet,mobile',
                 'page' => 'nullable|integer|min:0',
+=======
+>>>>>>> Stashed changes
                 'yandex_client_id' => 'nullable|string',
-                'yandex_client_secret' => 'nullable|string',
-                'yandex_redirect_uri' => 'nullable|url',
                 'yandex_metrika_token' => 'nullable|string',
                 'yandex_metrika_counter' => 'nullable|string',
-                'yandex_metrika_period' => 'nullable|string',
-                'yandex_metrika_metrics' => 'nullable|string',
-                'yandex_metrika_filters' => 'nullable|string',
-                'yandex_metrika_dimensions' => 'nullable|string',
-                'yandex_metrika_sort' => 'nullable|string',
             ]);
 
             // Фильтруем null и пустые строки, чтобы не перезаписывать существующие значения
