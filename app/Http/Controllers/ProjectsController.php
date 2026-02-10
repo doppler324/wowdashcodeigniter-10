@@ -46,29 +46,38 @@ class ProjectsController extends Controller
         try {
             $settings = Setting::where('user_id', auth()->id())->first();
 
+            \Illuminate\Support\Facades\Log::info('Yandex Metrika settings:', [
+                'settings' => $settings,
+                'has_token' => !empty($settings->yandex_metrika_token),
+                'has_counter' => !empty($settings->yandex_metrika_counter)
+            ]);
+
             if (!$settings || empty($settings->yandex_metrika_token) || empty($settings->yandex_metrika_counter)) {
+                \Illuminate\Support\Facades\Log::info('Yandex Metrika settings not found or invalid, returning mock data');
                 return $this->getMockYearlyChartData();
             }
 
             $yandexMetrikaService = new YandexMetrikaService($settings->yandex_metrika_token);
 
-            $date1 = now()->subYear()->format('Y-m-d');
-            $date2 = now()->format('Y-m-d');
+            $date1 = now()->subMonths(11)->firstOfMonth()->format('Y-m-d'); // Начало 12 месяцев назад
+            $date2 = now()->lastOfMonth()->format('Y-m-d'); // Конец текущего месяца
 
             $params = [
                 'ids' => $settings->yandex_metrika_counter,
                 'date1' => $date1,
                 'date2' => $date2,
-                'metrics' => $settings->yandex_metrika_metrics ?? 'ym:s:visits',
+                'metrics' => $settings->yandex_metrika_metrics ?? 'ym:s:users', // Метрика пользователей вместо визитов
                 'dimensions' => 'ym:s:month',
-                'group' => 'month',
             ];
 
             \Illuminate\Support\Facades\Log::info('Calling Yandex Metrika API for yearly data with params: ' . json_encode($params));
             $response = $yandexMetrikaService->getData($params);
-            \Illuminate\Support\Facades\Log::info('Yandex Metrika API yearly response: ' . json_encode($response));
+            \Illuminate\Support\Facades\Log::info('Yandex Metrika API yearly response: ' . print_r($response, true));
 
-            return $this->formatYearlyChartData($response);
+            $formattedData = $this->formatYearlyChartData($response);
+            \Illuminate\Support\Facades\Log::info('Formatted yearly chart data: ' . print_r($formattedData, true));
+
+            return $formattedData;
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Error fetching yearly chart data: ' . $e->getMessage());
             return $this->getMockYearlyChartData();
@@ -87,12 +96,27 @@ class ProjectsController extends Controller
             $dateValues = [];
 
             foreach ($response['data'] as $item) {
-                $date = \Carbon\Carbon::parse($item['dimensions'][0]['name'])->format('M Y'); // Форматируем как "Jan 2024"
-                $visitCount = (int)array_sum($item['metrics'][0]);
-                $dateValues[$item['dimensions'][0]['name']] = ['date' => $date, 'value' => $visitCount];
+                $monthNumber = (int)$item['dimensions'][0]['name'];
+                $currentYear = now()->year;
+
+                // Определяем год для месяца
+                $year = $currentYear;
+                if ($monthNumber > now()->month) {
+                    $year = $currentYear - 1;
+                }
+
+                $date = \Carbon\Carbon::createFromDate($year, $monthNumber, 1);
+                $dateValues[$date->format('Y-m')] = [
+                    'date' => $date->isoFormat('MMMM YYYY'), // Форматируем как "январь 2024" (русский)
+                    'value' => (int)$item['metrics'][0],
+                    'sort_key' => $date->timestamp // Ключ для сортировки
+                ];
             }
 
-            ksort($dateValues);
+            // Сортируем по времени (слева направо — от старого к новому)
+            usort($dateValues, function($a, $b) {
+                return $a['sort_key'] <=> $b['sort_key'];
+            });
 
             foreach ($dateValues as $value) {
                 $categories[] = $value['date'];
@@ -132,12 +156,11 @@ class ProjectsController extends Controller
                 'date2' => $date2,
                 'metrics' => $settings->yandex_metrika_metrics ?? 'ym:s:visits',
                 'dimensions' => $settings->yandex_metrika_dimensions ?? 'ym:s:date',
-                'group' => 'day',
             ];
 
-            \Illuminate\Support\Facades\Log::info('Calling Yandex Metrika API with params: ' . json_encode($params));
+            \Illuminate\Support\Facades\Log::info('Calling Yandex Metrika API for daily data with params: ' . json_encode($params));
             $response = $yandexMetrikaService->getData($params);
-            \Illuminate\Support\Facades\Log::info('Yandex Metrika API response: ' . json_encode($response));
+            \Illuminate\Support\Facades\Log::info('Yandex Metrika API daily response: ' . print_r($response, true));
 
             return $this->formatChartData($response);
         } catch (\Exception $e) {
@@ -158,14 +181,40 @@ class ProjectsController extends Controller
             $dateValues = [];
 
             foreach ($response['data'] as $item) {
-                $date = \Carbon\Carbon::parse($item['dimensions'][0]['name'])->format('d.m');
-                $visitCount = (int)array_sum($item['metrics'][0]);
+                $date = \Carbon\Carbon::parse($item['dimensions'][0]['name'])->isoFormat('DD.MM'); // Форматируем как "01.02"
+                $visitCount = (int)$item['metrics'][0];
                 $dateValues[$item['dimensions'][0]['name']] = ['date' => $date, 'value' => $visitCount];
             }
 
             ksort($dateValues);
 
             foreach ($dateValues as $value) {
+                $categories[] = $value['date'];
+                $data[] = $value['value'];
+            }
+        }
+
+        // Заполняем пропущенные даты нулями для плавного графика
+        if (!empty($categories)) {
+            $startDate = \Carbon\Carbon::parse(array_key_first($dateValues));
+            $endDate = \Carbon\Carbon::parse(array_key_last($dateValues));
+            $fullDateValues = [];
+
+            $currentDate = $startDate->copy();
+            while ($currentDate <= $endDate) {
+                $dateKey = $currentDate->format('Y-m-d');
+                $dateLabel = $currentDate->isoFormat('DD.MM');
+                if (isset($dateValues[$dateKey])) {
+                    $fullDateValues[$dateKey] = $dateValues[$dateKey];
+                } else {
+                    $fullDateValues[$dateKey] = ['date' => $dateLabel, 'value' => 0];
+                }
+                $currentDate->addDay();
+            }
+
+            $categories = [];
+            $data = [];
+            foreach ($fullDateValues as $value) {
                 $categories[] = $value['date'];
                 $data[] = $value['value'];
             }
@@ -182,18 +231,9 @@ class ProjectsController extends Controller
      */
     private function getMockYearlyChartData()
     {
-        $categories = [];
-        $data = [];
-
-        for ($i = 11; $i >= 0; $i--) {
-            $date = now()->subMonths($i)->format('M Y');
-            $categories[] = $date;
-            $data[] = rand(500, 2000);
-        }
-
         return [
-            'categories' => $categories,
-            'data' => $data,
+            'categories' => [],
+            'data' => [],
         ];
     }
 
@@ -202,18 +242,9 @@ class ProjectsController extends Controller
      */
     private function getMockChartData()
     {
-        $categories = [];
-        $data = [];
-
-        for ($i = 29; $i >= 0; $i--) {
-            $date = now()->subDays($i)->format('d.m');
-            $categories[] = $date;
-            $data[] = rand(100, 500);
-        }
-
         return [
-            'categories' => $categories,
-            'data' => $data,
+            'categories' => [],
+            'data' => [],
         ];
     }
 

@@ -100,7 +100,13 @@ $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></scri
             },
             xaxis: {
                 categories: ' . json_encode($chartData['categories']) . ',
-                tickAmount: 5,
+                tickAmount: ' . count($chartData['categories']) . ',
+                labels: {
+                    rotate: 0,
+                    style: {
+                        fontSize: "12px"
+                    }
+                }
             },
             yaxis: {
                 title: {
@@ -150,7 +156,13 @@ $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></scri
             },
             xaxis: {
                 categories: ' . json_encode($yearlyChartData['categories']) . ',
-                tickAmount: 6,
+                tickAmount: ' . count($yearlyChartData['categories']) . ',
+                labels: {
+                    rotate: 0,
+                    style: {
+                        fontSize: "12px"
+                    }
+                }
             },
             yaxis: {
                 title: {
@@ -175,79 +187,6 @@ $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></scri
                 }
             }
         };
-        var yearChart = new ApexCharts(document.querySelector("#lineYearChart"), yearOptions);
-        yearChart.render();
-    });
-</script>
-                labels: {
-                    style: {
-                        fontSize: "14px"
-                    }
-                }
-            },
-            yaxis: {
-                labels: {
-                    formatter: function (value) {
-                        return value;
-                    },
-                    style: {
-                        fontSize: "14px"
-                    }
-                },
-            },
-          };
-
-        // Инициализация графиков
-        var monthChart = new ApexCharts(document.querySelector("#lineMonthChart"), monthOptions);
-        monthChart.render();
-
-        var yearOptions = {
-            series: [{
-                name: "Посещения",
-                data: ' . json_encode($yearlyChartData['data']) . '
-            }],
-            chart: {
-                height: 264,
-                type: "line",
-                zoom: {
-                    enabled: false
-                },
-                toolbar: {
-                    show: false
-                },
-            },
-            colors: ["#28C76F"],
-            dataLabels: {
-                enabled: true
-            },
-            xaxis: {
-                categories: ' . json_encode($yearlyChartData['categories']) . ',
-                tickAmount: 6,
-            },
-            yaxis: {
-                title: {
-                    text: "Посещения"
-                },
-            },
-            stroke: {
-                width: 3
-            },
-            markers: {
-                size: 5,
-                colors: ["#28C76F"]
-            },
-            grid: {
-                strokeDashArray: 4
-            },
-            tooltip: {
-                y: {
-                    formatter: function(val) {
-                        return val + " посещений"
-                    }
-                }
-            }
-        };
-
         var yearChart = new ApexCharts(document.querySelector("#lineYearChart"), yearOptions);
         yearChart.render();
     });
