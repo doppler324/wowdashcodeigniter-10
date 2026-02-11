@@ -74,11 +74,52 @@ $style = '
 }
 </style>
 ';
+$annotationsJson = json_encode($annotations);
 $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></script>
 <script src="' . asset('assets/js/flatpickr.js') . '"></script>
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         // График за месяц
+        // Данные о задачах по датам
+        const activitiesByDate = ' . json_encode($activitiesByDate) . ';
+
+        // Формируем маркеры для графика
+        const markersData = [];
+        ' . $annotationsJson . '.forEach(annotation => {
+            if (annotation.tasks) {
+                const taskCount = annotation.tasks.length;
+
+                // Определяем букву для кружка
+                const labelText = taskCount > 1 ? "У" : annotation.tasks[0].category.charAt(0);
+
+                // Цвет по типу задачи
+                const colors = {
+                    content: "#FF9F29",
+                    links: "#28C76F",
+                    technical: "#FF4560",
+                    meta: "#7367F0",
+                    other: "#00CFE8"
+                };
+
+                const markerColor = taskCount > 1 ? "#FF4560" : (colors[annotation.tasks[0].category] || "#9F9F9F");
+
+                markersData.push({
+                    x: annotation.x,
+                    y: 0, // Позиционируем маркер на вершине графика
+                    symbol: "circle",
+                    fillColor: markerColor,
+                    strokeColor: markerColor,
+                    size: taskCount > 1 ? 12 : 10,
+                    strokeWidth: 2,
+                    text: labelText,
+                    textColor: "#fff",
+                    fontSize: taskCount > 1 ? 8 : 7,
+                    fontWeight: "bold",
+                    tasks: annotation.tasks
+                });
+            }
+        });
+
         var monthOptions = {
             series: [{
                 name: "Посещения",
@@ -93,6 +134,34 @@ $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></scri
                 toolbar: {
                     show: false
                 },
+                events: {
+                    markerClick: function(event, chartContext, config) {
+                        // Показываем модал с задачами
+                        const taskData = markersData.find(marker => marker.x === config.dataPointIndex);
+                        if (taskData) {
+                            showTasksModal(taskData.tasks);
+                        }
+                    },
+                    markerMouseEnter: function(event, chartContext, config) {
+                        // Показываем подсказку
+                        const taskData = markersData.find(marker => marker.x === config.dataPointIndex);
+                        if (taskData) {
+                            let tooltipText = "";
+                            taskData.tasks.forEach((task, index) => {
+                                tooltipText += (index + 1) + ". " + task.title + "\\n";
+                            });
+                            const tooltip = showAnnotationTooltip(tooltipText);
+                            config.tooltip = tooltip;
+                        }
+                    },
+                    markerMouseLeave: function(event, chartContext, config) {
+                        // Скрываем подсказку
+                        if (config.tooltip) {
+                            hideAnnotationTooltip(config.tooltip);
+                            config.tooltip = null;
+                        }
+                    }
+                }
             },
             colors: ["#487FFF"],
             dataLabels: {
@@ -112,12 +181,13 @@ $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></scri
                 title: {
                     text: "Посещения"
                 },
+                min: 0
             },
             stroke: {
                 width: 3
             },
             markers: {
-                size: 5,
+                size: 0, // Отключаем стандартные маркеры
                 colors: ["#487FFF"]
             },
             grid: {
@@ -129,6 +199,36 @@ $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></scri
                         return val + " посещений"
                     }
                 }
+            },
+            annotations: {
+                yaxis: markersData.map(marker => ({
+                    y: marker.y,
+                    y2: marker.y,
+                    x: marker.x,
+                    x2: marker.x,
+                    borderColor: marker.fillColor,
+                    borderWidth: marker.strokeWidth,
+                    label: {
+                        borderColor: marker.fillColor,
+                        style: {
+                            color: marker.textColor,
+                            background: marker.fillColor,
+                            fontSize: marker.fontSize,
+                            fontWeight: marker.fontWeight,
+                            padding: 0,
+                            width: marker.size + "px",
+                            height: marker.size + "px",
+                            borderRadius: "50%",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center"
+                        },
+                        text: marker.text,
+                        position: "top"
+                    },
+                    tasks: marker.tasks
+                })),
+                xaxis: ' . $annotationsJson . '
             }
         };
         var monthChart = new ApexCharts(document.querySelector("#lineMonthChart"), monthOptions);
@@ -491,7 +591,112 @@ document.addEventListener("DOMContentLoaded", function() {
             </div>
         `;
     }
+
+    // Функция для показа подсказки при наведении на аннотацию
+    function showAnnotationTooltip(tooltipText) {
+        // Создаем элемент для подсказки
+        const tooltip = document.createElement('div');
+        tooltip.className = 'annotation-tooltip';
+        tooltip.innerHTML = tooltipText.replace(/\n/g, '<br>');
+        tooltip.style.cssText = `
+            position: absolute;
+            background: #333;
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: pre-wrap;
+            z-index: 1000;
+            pointer-events: none;
+            max-width: 200px;
+        `;
+
+        document.body.appendChild(tooltip);
+
+        // Позиционируем подсказку рядом с курсором
+        document.addEventListener('mousemove', (e) => {
+            tooltip.style.left = e.pageX + 10 + 'px';
+            tooltip.style.top = e.pageY + 10 + 'px';
+        });
+
+        return tooltip;
+    }
+
+    // Функция для скрытия подсказки
+    function hideAnnotationTooltip(tooltip) {
+        if (tooltip) {
+            document.body.removeChild(tooltip);
+        }
+    }
 </script>
+
+    <!-- Modal для показа задач -->
+    <div class="modal fade" id="tasksModal" tabindex="-1" aria-labelledby="tasksModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="tasksModalLabel">Задачи за дату</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <ul id="tasksList" class="list-unstyled"></ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Функция для показа модалки с задачами -->
+    <script>
+        function showTasksModal(tasks) {
+            const tasksList = document.getElementById('tasksList');
+            tasksList.innerHTML = '';
+
+            tasks.forEach(task => {
+                const li = document.createElement('li');
+                li.className = 'd-flex align-items-start gap-3 mb-24 p-16 border-bottom';
+
+                // Категория задачи для цветной метки
+                const categoryClass = {
+                    'content': 'bg-primary',
+                    'links': 'bg-success',
+                    'technical': 'bg-danger',
+                    'meta': 'bg-warning',
+                    'other': 'bg-info'
+                }[task.category] || 'bg-secondary';
+
+                // Получаем полные данные задачи из глобального массива
+                const fullTask = activitiesData.find(item => item.id === task.id);
+
+                li.innerHTML = `
+                    <span class="w-8-px h-8-px ${categoryClass} rounded-circle mt-2"></span>
+                    <div class="flex-grow-1">
+                        <h6 class="fw-semibold mb-0">${task.title}</h6>
+                        <span class="text-sm text-secondary-light">${task.formatted_date}</span>
+                        <span class="badge ${categoryClass} text-sm ms-2">${task.category}</span>
+                        ${fullTask?.description ? `
+                            <p class="text-sm text-primary-light mt-8">${fullTask.description}</p>
+                        ` : ''}
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-info" onclick="showActivityDetails(${task.id})" title="Просмотреть детали">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        <a href="{{ route('projects.activities.edit', [$project, ':id']) }}".replace(':id', task.id) class="btn btn-sm btn-success" title="Редактировать">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                    </div>
+                `.replace(':id', task.id);
+
+                tasksList.appendChild(li);
+            });
+
+            const modal = new bootstrap.Modal(document.getElementById('tasksModal'));
+            modal.show();
+        }
+    </script>
 
 @section('content')
 

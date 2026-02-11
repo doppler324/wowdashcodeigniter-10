@@ -35,7 +35,97 @@ class ProjectsController extends Controller
         $chartData = $this->getChartData();
         $yearlyChartData = $this->getYearlyChartData();
 
-        return view('projects.show', compact('project', 'pages', 'activities', 'keywords', 'chartData', 'yearlyChartData'));
+        // Группируем активности по датам для графика
+        $activitiesByDate = $activities->groupBy(function($item) {
+            return $item->event_date->format('Y-m-d');
+        })->map(function($group) {
+            return $group->map(function($activity) {
+                return [
+                    'id' => $activity->id,
+                    'title' => $activity->title,
+                    'category' => $activity->category,
+                    'formatted_date' => $activity->formatted_date
+                ];
+            })->toArray();
+        });
+
+        // Формируем маркеры для графика
+        $markers = [];
+        if (!empty($chartData['full_dates'])) {
+            foreach ($chartData['full_dates'] as $index => $fullDate) {
+                if (isset($activitiesByDate[$fullDate])) {
+                    $taskCount = count($activitiesByDate[$fullDate]);
+
+                    // Определяем букву для кружка
+                    $labelText = $taskCount > 1 ? 'У' : mb_substr($activitiesByDate[$fullDate][0]['category'], 0, 1);
+
+                    // Цвет по типу задачи
+                    $colors = [
+                        'content' => '#FF9F29',
+                        'links' => '#28C76F',
+                        'technical' => '#FF4560',
+                        'meta' => '#7367F0',
+                        'other' => '#00CFE8'
+                    ];
+
+                    $markerColor = $taskCount > 1 ? '#FF4560' : ($colors[$activitiesByDate[$fullDate][0]['category']] ?? '#9F9F9F');
+
+                    // Формируем текст подсказки
+                    $tooltipText = '';
+                    foreach ($activitiesByDate[$fullDate] as $taskIndex => $task) {
+                        $tooltipText .= ($taskIndex + 1) . '. ' . $task['title'] . "\n";
+                    }
+
+                    $markers[$index] = [
+                        'symbol' => 'circle',
+                        'fillColor' => $markerColor,
+                        'strokeColor' => $markerColor,
+                        'size' => $taskCount > 1 ? 12 : 10,
+                        'strokeWidth' => 2,
+                        'text' => $labelText,
+                        'textColor' => '#fff',
+                        'fontSize' => $taskCount > 1 ? 8 : 7,
+                        'fontWeight' => 'bold',
+                        'tasks' => $activitiesByDate[$fullDate],
+                        'tooltipText' => $tooltipText
+                    ];
+                }
+            }
+        }
+
+        // Формируем аннотации для вертикальных линий
+        $annotations = [];
+        if (!empty($chartData['full_dates'])) {
+            foreach ($chartData['full_dates'] as $index => $fullDate) {
+                if (isset($activitiesByDate[$fullDate])) {
+                    $taskCount = count($activitiesByDate[$fullDate]);
+
+                    // Цвет по типу задачи
+                    $colors = [
+                        'content' => '#FF9F29',
+                        'links' => '#28C76F',
+                        'technical' => '#FF4560',
+                        'meta' => '#7367F0',
+                        'other' => '#00CFE8'
+                    ];
+
+                    $borderColor = $taskCount > 1 ? '#FF4560' : ($colors[$activitiesByDate[$fullDate][0]['category']] ?? '#9F9F9F');
+
+                    $annotations[] = [
+                        'x' => $index,
+                        'borderColor' => $borderColor,
+                        'borderWidth' => 3, // Жирная линия
+                        'tasks' => $activitiesByDate[$fullDate],
+                        'tooltipText' => '' // Мы используем подсказку для маркера
+                    ];
+                }
+            }
+        }
+
+        // Кодируем аннотации в JSON
+        $annotationsJson = json_encode($annotations);
+
+        return view('projects.show', compact('project', 'pages', 'activities', 'keywords', 'chartData', 'yearlyChartData', 'activitiesByDate', 'annotations', 'annotationsJson'));
     }
 
     /**
@@ -176,21 +266,24 @@ class ProjectsController extends Controller
     {
         $categories = [];
         $data = [];
+        $fullDates = [];
 
         if (isset($response['data'])) {
             $dateValues = [];
 
             foreach ($response['data'] as $item) {
-                $date = \Carbon\Carbon::parse($item['dimensions'][0]['name'])->isoFormat('DD.MM'); // Форматируем как "01.02"
+                $date = \Carbon\Carbon::parse($item['dimensions'][0]['name']);
+                $dateStr = $date->isoFormat('DD.MM'); // Форматируем как "01.02"
                 $visitCount = (int)$item['metrics'][0];
-                $dateValues[$item['dimensions'][0]['name']] = ['date' => $date, 'value' => $visitCount];
+                $dateValues[$item['dimensions'][0]['name']] = ['date' => $dateStr, 'value' => $visitCount];
             }
 
             ksort($dateValues);
 
-            foreach ($dateValues as $value) {
+            foreach ($dateValues as $key => $value) {
                 $categories[] = $value['date'];
                 $data[] = $value['value'];
+                $fullDates[] = $key;
             }
         }
 
@@ -214,15 +307,18 @@ class ProjectsController extends Controller
 
             $categories = [];
             $data = [];
-            foreach ($fullDateValues as $value) {
+            $fullDates = [];
+            foreach ($fullDateValues as $key => $value) {
                 $categories[] = $value['date'];
                 $data[] = $value['value'];
+                $fullDates[] = $key;
             }
         }
 
         return [
             'categories' => $categories,
             'data' => $data,
+            'full_dates' => $fullDates
         ];
     }
 
@@ -242,9 +338,23 @@ class ProjectsController extends Controller
      */
     private function getMockChartData()
     {
+        // Генерируем данные за последние 30 дней
+        $categories = [];
+        $data = [];
+        $fullDates = [];
+
+        $startDate = \Carbon\Carbon::now()->subDays(29);
+        for ($i = 0; $i < 30; $i++) {
+            $currentDate = $startDate->copy()->addDays($i);
+            $categories[] = $currentDate->isoFormat('DD.MM');
+            $data[] = rand(10, 100);
+            $fullDates[] = $currentDate->format('Y-m-d');
+        }
+
         return [
-            'categories' => [],
-            'data' => [],
+            'categories' => $categories,
+            'data' => $data,
+            'full_dates' => $fullDates
         ];
     }
 
