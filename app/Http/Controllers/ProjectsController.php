@@ -113,6 +113,8 @@ class ProjectsController extends Controller
 
                     $annotations[] = [
                         'x' => $index,
+                        'y' => 0, // Начало линии от дна графика
+                        'y2' => $chartData['data'][$index] ?? 0, // Конец линии на значении данных
                         'borderColor' => $borderColor,
                         'borderWidth' => 3, // Жирная линия
                         'tasks' => $activitiesByDate[$fullDate],

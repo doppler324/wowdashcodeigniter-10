@@ -1,10 +1,41 @@
 @extends('layout.layout')
 
-@php
-$title = 'Просмотр проекта';
-$subTitle = 'Проект: ' . $project->name;
-$style = '
+{{-- Переменные для layout --}}
+<?php $title = 'Просмотр проекта'; ?>
+<?php $subTitle = 'Проект: ' . $project->name; ?>
+
+{{-- Стили для tooltip --}}
 <style>
+.tooltip-content {
+    padding: 12px;
+    min-width: 200px;
+    font-family: Arial, sans-serif;
+}
+.tooltip-visits {
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: #333;
+}
+.tooltip-tasks-title {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 8px;
+    font-weight: bold;
+    border-top: 1px solid #ddd;
+    padding-top: 8px;
+}
+.tooltip-task {
+    cursor: pointer;
+    padding: 6px 8px;
+    margin-bottom: 4px;
+    background: #f5f5f5;
+    border-radius: 4px;
+    font-size: 13px;
+}
+.tooltip-task:hover {
+    background: #e0e0e0;
+}
 .pages-table .bordered-table {
     table-layout: auto;
     width: 100%;
@@ -67,578 +98,335 @@ $style = '
     border-radius: 8px;
     font-size: 14px;
 }
-.search-input:focus {
-    outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
-}
 </style>
-';
-$annotationsJson = json_encode($annotations);
-$script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></script>
-<script src="' . asset('assets/js/flatpickr.js') . '"></script>
+
+{{-- JavaScript для графика --}}
+<script src="{{ asset('assets/js/lineChartPageChart.js') }}"></script>
+<script src="{{ asset('assets/js/flatpickr.js') }}"></script>
 <script>
+    // Глобальные переменные для задач
+    const annotationsData = {!! $annotationsJson !!};
+    const activitiesByDate = {!! json_encode($activitiesByDate) !!};
+
+    // Функция для форматирования tooltip
+    function getTooltipHtml(dataPointIndex) {
+        const annotation = annotationsData[dataPointIndex];
+        const chartDataLocal = {!! $chartDataJson !!};
+        const val = chartDataLocal.data[dataPointIndex] || 0;
+        let html = "<div class='tooltip-content'>";
+        html += "<div class='tooltip-visits'>" + val + " посещений</div>";
+
+        if (annotation && annotation.tasks && annotation.tasks.length > 0) {
+            html += "<div class='tooltip-tasks-title'>Задачи:</div>";
+
+            for (let i = 0; i < annotation.tasks.length; i++) {
+                const task = annotation.tasks[i];
+                html += "<div class='tooltip-task' onclick='showTaskFromTooltip(" + dataPointIndex + ", " + i + ")'>" + (i + 1) + ". " + task.title + "</div>";
+            }
+        }
+
+        html += "</div>";
+        return html;
+    }
+
+    // Функция для показа задачи из tooltip
+    function showTaskFromTooltip(dataPointIndex, taskIndex) {
+        const annotation = annotationsData[dataPointIndex];
+        if (annotation && annotation.tasks && annotation.tasks[taskIndex]) {
+            showTasksModal([annotation.tasks[taskIndex]]);
+        }
+    }
+
     document.addEventListener("DOMContentLoaded", function() {
         // График за месяц
-        // Данные о задачах по датам
-        const activitiesByDate = ' . json_encode($activitiesByDate) . ';
+        const chartData = {!! $chartDataJson !!};
 
-        // Формируем маркеры для графика
-        const markersData = [];
-        ' . $annotationsJson . '.forEach(annotation => {
-            if (annotation.tasks) {
-                const taskCount = annotation.tasks.length;
+        // Цвета по типу задачи
+        const categoryColors = {
+            content: "#FF9F29",
+            links: "#28C76F",
+            technical: "#FF4560",
+            meta: "#7367F0",
+            other: "#00CFE8"
+        };
 
-                // Определяем букву для кружка
-                const labelText = taskCount > 1 ? "У" : annotation.tasks[0].category.charAt(0);
-
-                // Цвет по типу задачи
-                const colors = {
-                    content: "#FF9F29",
-                    links: "#28C76F",
-                    technical: "#FF4560",
-                    meta: "#7367F0",
-                    other: "#00CFE8"
-                };
-
-                const markerColor = taskCount > 1 ? "#FF4560" : (colors[annotation.tasks[0].category] || "#9F9F9F");
-
-                markersData.push({
-                    x: annotation.x,
-                    y: 0, // Позиционируем маркер на вершине графика
-                    symbol: "circle",
-                    fillColor: markerColor,
-                    strokeColor: markerColor,
-                    size: taskCount > 1 ? 12 : 10,
-                    strokeWidth: 2,
-                    text: labelText,
-                    textColor: "#fff",
-                    fontSize: taskCount > 1 ? 8 : 7,
-                    fontWeight: "bold",
-                    tasks: annotation.tasks
-                });
+        // Формируем размеры маркеров для каждой точки данных
+        const markerSizes = chartData.data.map((value, index) => {
+            const annotation = annotationsData[index];
+            if (annotation && annotation.tasks) {
+                return annotation.tasks.length > 1 ? 10 : 8;
             }
+            return 0; // Обычные точки без маркера
         });
 
-        var monthOptions = {
+        // Формируем цвета маркеров для каждой точки данных
+        const markerColors = chartData.data.map((value, index) => {
+            const annotation = annotationsData[index];
+            if (annotation && annotation.tasks && annotation.tasks.length > 0) {
+                // Берем цвет первой задачи
+                const firstTask = annotation.tasks[0];
+                return categoryColors[firstTask.category] || "#7367F0";
+            }
+            return "#5b5b5b"; // Обычный цвет для точек без задач
+        });
+
+        // График за месяц
+        var optionsMonth = {
             series: [{
-                name: "Посещения",
-                data: ' . json_encode($chartData['data']) . '
+                name: "Visits",
+                data: chartData.data
             }],
             chart: {
-                height: 264,
-                type: "line",
-                zoom: {
-                    enabled: false
-                },
+                height: 350,
+                type: "area",
                 toolbar: {
                     show: false
                 },
-                events: {
-                    markerClick: function(event, chartContext, config) {
-                        // Показываем модал с задачами
-                        const taskData = markersData.find(marker => marker.x === config.dataPointIndex);
-                        if (taskData) {
-                            showTasksModal(taskData.tasks);
-                        }
-                    },
-                    markerMouseEnter: function(event, chartContext, config) {
-                        // Показываем подсказку
-                        const taskData = markersData.find(marker => marker.x === config.dataPointIndex);
-                        if (taskData) {
-                            let tooltipText = "";
-                            taskData.tasks.forEach((task, index) => {
-                                tooltipText += (index + 1) + ". " + task.title + "\\n";
-                            });
-                            const tooltip = showAnnotationTooltip(tooltipText);
-                            config.tooltip = tooltip;
-                        }
-                    },
-                    markerMouseLeave: function(event, chartContext, config) {
-                        // Скрываем подсказку
-                        if (config.tooltip) {
-                            hideAnnotationTooltip(config.tooltip);
-                            config.tooltip = null;
-                        }
+                animations: {
+                    enabled: true,
+                    easing: "linear",
+                    dynamicAnimation: {
+                        speed: 1000
                     }
-                }
-            },
-            colors: ["#487FFF"],
-            dataLabels: {
-                enabled: true
-            },
-            xaxis: {
-                categories: ' . json_encode($chartData['categories']) . ',
-                tickAmount: ' . count($chartData['categories']) . ',
-                labels: {
-                    rotate: 0,
-                    style: {
-                        fontSize: "12px"
-                    }
-                }
-            },
-            yaxis: {
-                title: {
-                    text: "Посещения"
                 },
-                min: 0
+                events: {
+                    dataPointSelection: function(event, chartContext, config) {
+                        const dataPointIndex = config.dataPointIndex;
+                        showTaskFromTooltip(dataPointIndex, 0);
+                    }
+                }
+            },
+            colors: ["#5b5b5b"],
+            dataLabels: {
+                enabled: false
             },
             stroke: {
-                width: 3
+                curve: "smooth"
             },
-            markers: {
-                size: 0, // Отключаем стандартные маркеры
-                colors: ["#487FFF"]
+            xaxis: {
+                categories: chartData.categories,
+                labels: {
+                    show: true,
+                    rotate: -45,
+                    rotateAlways: false,
+                    hideOverlappingLabels: true,
+                    showDuplicates: false,
+                    trim: false,
+                    minHeight: undefined,
+                    maxHeight: 120,
+                    style: {
+                        colors: [],
+                        fontSize: "12px",
+                        fontFamily: "Helvetica, Arial, sans-serif",
+                        fontWeight: 400,
+                        cssClass: "apexcharts-xaxis-label"
+                    },
+                    offsetX: 0,
+                    offsetY: 0,
+                    format: undefined,
+                    formatter: undefined,
+                    dateTimeFormat: undefined
+                },
+                tickAmount: undefined,
+                tickPlacement: "on",
+                min: undefined,
+                max: undefined,
+                range: undefined,
+                floating: false,
+                decimalsInFloat: undefined,
+                overwriteCategories: undefined
             },
-            grid: {
-                strokeDashArray: 4
-            },
-            tooltip: {
-                y: {
+            yaxis: {
+                labels: {
                     formatter: function(val) {
-                        return val + " посещений"
+                        return Math.round(val);
                     }
                 }
             },
             annotations: {
-                yaxis: markersData.map(marker => ({
-                    y: marker.y,
-                    y2: marker.y,
-                    x: marker.x,
-                    x2: marker.x,
-                    borderColor: marker.fillColor,
-                    borderWidth: marker.strokeWidth,
+                xaxis: chartData.annotations.map(ann => ({
+                    x: ann.x,
+                    borderColor: ann.borderColor,
+                    borderWidth: 2,
                     label: {
-                        borderColor: marker.fillColor,
+                        borderColor: ann.borderColor,
+                        borderRadius: 6,
+                        borderWidth: 1,
                         style: {
-                            color: marker.textColor,
-                            background: marker.fillColor,
-                            fontSize: marker.fontSize,
-                            fontWeight: marker.fontWeight,
-                            padding: 0,
-                            width: marker.size + "px",
-                            height: marker.size + "px",
-                            borderRadius: "50%",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center"
+                            fontSize: "12px",
+                            color: "#fff",
+                            background: ann.borderColor
                         },
-                        text: marker.text,
-                        position: "top"
-                    },
-                    tasks: marker.tasks
-                })),
-                xaxis: ' . $annotationsJson . '
-            }
-        };
-        var monthChart = new ApexCharts(document.querySelector("#lineMonthChart"), monthOptions);
-        monthChart.render();
-
-        // График за год
-        var yearOptions = {
-            series: [{
-                name: "Посещения",
-                data: ' . json_encode($yearlyChartData['data']) . '
-            }],
-            chart: {
-                height: 264,
-                type: "line",
-                zoom: {
-                    enabled: false
-                },
-                toolbar: {
-                    show: false
-                },
-            },
-            colors: ["#28C76F"],
-            dataLabels: {
-                enabled: true
-            },
-            xaxis: {
-                categories: ' . json_encode($yearlyChartData['categories']) . ',
-                tickAmount: ' . count($yearlyChartData['categories']) . ',
-                labels: {
-                    rotate: 0,
-                    style: {
-                        fontSize: "12px"
+                        text: ann.labelText || ""
                     }
-                }
-            },
-            yaxis: {
-                title: {
-                    text: "Посещения"
-                },
-            },
-            stroke: {
-                width: 3
-            },
-            markers: {
-                size: 5,
-                colors: ["#28C76F"]
-            },
-            grid: {
-                strokeDashArray: 4
+                }))
             },
             tooltip: {
-                y: {
+                custom: function(options) {
+                    return getTooltipHtml(options.dataPointIndex);
+                }
+            },
+            markers: {
+                size: markerSizes,
+                colors: markerColors,
+                strokeColors: "#fff",
+                strokeWidth: 2,
+                strokeOpacity: 0.9,
+                strokeDashArray: 0,
+                fillOpacity: 1,
+                discrete: [],
+                shape: "circle",
+                radius: 2,
+                offsetX: 0,
+                offsetY: 0,
+                onClick: undefined,
+                onDblClick: undefined,
+                showNullDataPoints: true,
+                hover: {
+                    size: undefined,
+                    sizeOffset: 3
+                }
+            }
+        };
+
+        var chartMonth = new ApexCharts(document.querySelector("#lineMonthChart"), optionsMonth);
+        chartMonth.render();
+
+        // График за год
+        var optionsYear = {
+            series: [{
+                name: "Visits",
+                data: chartData.yearData || chartData.data
+            }],
+            chart: {
+                height: 350,
+                type: "area",
+                toolbar: {
+                    show: false
+                }
+            },
+            colors: ["#5b5b5b"],
+            dataLabels: {
+                enabled: false
+            },
+            stroke: {
+                curve: "smooth"
+            },
+            xaxis: {
+                categories: chartData.yearCategories || chartData.categories,
+                labels: {
+                    show: true,
+                    rotate: -45,
+                    rotateAlways: false,
+                    hideOverlappingLabels: true,
+                    showDuplicates: false,
+                    trim: false,
+                    minHeight: undefined,
+                    maxHeight: 120,
+                    style: {
+                        colors: [],
+                        fontSize: "12px",
+                        fontFamily: "Helvetica, Arial, sans-serif",
+                        fontWeight: 400,
+                        cssClass: "apexcharts-xaxis-label"
+                    },
+                    offsetX: 0,
+                    offsetY: 0,
+                    format: undefined,
+                    formatter: undefined,
+                    dateTimeFormat: undefined
+                },
+                tickAmount: undefined,
+                tickPlacement: "on",
+                min: undefined,
+                max: undefined,
+                range: undefined,
+                floating: false,
+                decimalsInFloat: undefined,
+                overwriteCategories: undefined
+            },
+            yaxis: {
+                labels: {
                     formatter: function(val) {
-                        return val + " посещений"
+                        return Math.round(val);
                     }
+                }
+            },
+            annotations: {
+                xaxis: chartData.annotations.map(ann => ({
+                    x: ann.x,
+                    borderColor: ann.borderColor,
+                    borderWidth: 2,
+                    label: {
+                        borderColor: ann.borderColor,
+                        borderRadius: 6,
+                        borderWidth: 1,
+                        style: {
+                            fontSize: "12px",
+                            color: "#fff",
+                            background: ann.borderColor
+                        },
+                        text: ann.labelText || ""
+                    }
+                }))
+            },
+            tooltip: {
+                custom: function(options) {
+                    return getTooltipHtml(options.dataPointIndex);
+                }
+            },
+            markers: {
+                size: markerSizes,
+                colors: markerColors,
+                strokeColors: "#fff",
+                strokeWidth: 2,
+                strokeOpacity: 0.9,
+                strokeDashArray: 0,
+                fillOpacity: 1,
+                discrete: [],
+                shape: "circle",
+                radius: 2,
+                offsetX: 0,
+                offsetY: 0,
+                onClick: undefined,
+                onDblClick: undefined,
+                showNullDataPoints: true,
+                hover: {
+                    size: undefined,
+                    sizeOffset: 3
                 }
             }
         };
-        var yearChart = new ApexCharts(document.querySelector("#lineYearChart"), yearOptions);
-        yearChart.render();
+
+        var chartYear = new ApexCharts(document.querySelector("#lineYearChart"), optionsYear);
+        chartYear.render();
     });
 </script>
-<script>
-    // Flat pickr or date picker js
-    function getDatePicker(receiveID) {
-        flatpickr(receiveID, {
-            enableTime: true,
-            dateFormat: "Y-m-d H:i",
-        });
-    }
-    getDatePicker("#startDate");
-</script>
-<script>
-    // Инициализация DataTable для ключевых слов
-    var keywordsTable;
-    if (typeof DataTable !== "undefined") {
-        var savedKeywordsPageLength = localStorage.getItem("keywordsTableLength");
-        var initialKeywordsPageLength = savedKeywordsPageLength ? parseInt(savedKeywordsPageLength) : 10;
 
-        keywordsTable = new DataTable("#keywordsTable", {
-            paging: true,
-            lengthChange: true,
-            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Все"]],
-            pageLength: initialKeywordsPageLength,
-            ordering: true,
-            info: true,
-            searching: true,
-            columnDefs: [
-                { targets: [0], width: "60px" },
-                { targets: [1], width: "50px" },
-                { targets: [4], width: "90px" },
-                { targets: [5], width: "80px" },
-                { targets: [6], width: "80px" },
-                { targets: [7], width: "80px" },
-                { targets: [8], width: "80px" },
-                { targets: [9], width: "80px" },
-                { targets: [10], width: "100px" },
-                { targets: [11], width: "140px" }
-            ]
-        });
-
-        keywordsTable.on("length.dt", function(e, settings, len) {
-            localStorage.setItem("keywordsTableLength", len);
-        });
-    }
-</script>
-<script>
-// Функция для сворачивания/разворачивания дочерних элементов
-function toggleChildren(parentId) {
-    const rows = document.querySelectorAll(`[data-parent-id="${parentId}"]`);
-    const toggleBtn = document.getElementById(`toggle-${parentId}`);
-    const isExpanded = toggleBtn.getAttribute("data-expanded") === "true";
-
-    rows.forEach(row => {
-        if (isExpanded) {
-            row.style.display = "none";
-            // Скрываем всех потомков рекурсивно
-            const childId = row.getAttribute("data-page-id");
-            if (childId) {
-                hideAllChildren(childId);
-            }
-        } else {
-            row.style.display = "table-row";
-        }
-    });
-
-    toggleBtn.setAttribute("data-expanded", !isExpanded);
-    toggleBtn.innerHTML = isExpanded ? `<iconify-icon icon="uil:plus"></iconify-icon>` : `<iconify-icon icon="uil:minus"></iconify-icon>`;
-}
-
-function hideAllChildren(parentId) {
-    const rows = document.querySelectorAll(`[data-parent-id="${parentId}"]`);
-    rows.forEach(row => {
-        row.style.display = "none";
-        const toggleBtn = document.getElementById(`toggle-${parentId}`);
-        if (toggleBtn) {
-            toggleBtn.setAttribute("data-expanded", "false");
-            toggleBtn.innerHTML = `<iconify-icon icon="uil:plus"></iconify-icon>`;
-        }
-        const childId = row.getAttribute("data-page-id");
-        if (childId) {
-            hideAllChildren(childId);
-        }
-    });
-}
-
-       // Инициализация DataTable
-      var table;
-      if (typeof DataTable !== "undefined") {
-          table = new DataTable("#dataTable", {
-              paging: false, // Отключаем пагинацию для дерева
-              lengthChange: false, // Отключаем выбор количества строк
-              ordering: true,
-              info: false, // Отключаем информацию о количестве записей
-              searching: true,
-              columnDefs: [
-                  { targets: [0], width: "50px" },
-                  { targets: [1], width: "60px" },
-                  { targets: [3], width: "100px" },
-                  { targets: [4], width: "90px" },
-                  { targets: [5], width: "100px" },
-                  { targets: [6], width: "110px" },
-                  { targets: [7], width: "80px" },
-                  { targets: [8], width: "140px" }
-              ]
-          });
-      }
-
-    // Настройки отображения столбцов — генерируются автоматически из заголовков таблицы
-    let columnSettings = {};
-
-    // Столбцы, которые всегда должны быть видимы (нельзя скрыть)
-    const alwaysVisibleColumns = [0, 2, 8]; // Первая (пустая), URL (3-я), Действия (последняя)
-
-    // Инициализация настроек столбцов из заголовков таблицы
-    function initColumnSettings() {
-        const headers = document.querySelectorAll("#dataTable thead th");
-        columnSettings = {};
-
-        headers.forEach((th, index) => {
-            const key = "col" + index;
-            const text = th.textContent.trim() || (index === 0 ? "Развернуть" : "Столбец " + index);
-            const isAlwaysVisible = alwaysVisibleColumns.includes(index);
-
-            columnSettings[key] = {
-                index: index,
-                key: key,
-                title: text,
-                default: true,
-                alwaysVisible: isAlwaysVisible
-            };
-        });
-    }
-
-    // Загрузка настроек из localStorage
-    function loadColumnSettings() {
-        const saved = localStorage.getItem("pagesTableColumns_" + "{{ $project->id }}");
-        if (saved) {
-            try {
-                const settings = JSON.parse(saved);
-                Object.keys(columnSettings).forEach(key => {
-                    if (settings.hasOwnProperty(key)) {
-                        columnSettings[key].visible = settings[key];
-                    } else {
-                        columnSettings[key].visible = columnSettings[key].default;
-                    }
-                    // Принудительно показываем столбцы, которые всегда должны быть видимы
-                    if (columnSettings[key].alwaysVisible) {
-                        columnSettings[key].visible = true;
-                    }
-                });
-            } catch (e) {
-                // Если ошибка парсинга, используем значения по умолчанию
-                Object.keys(columnSettings).forEach(key => {
-                    columnSettings[key].visible = columnSettings[key].default;
-                });
-            }
-        } else {
-            Object.keys(columnSettings).forEach(key => {
-                columnSettings[key].visible = columnSettings[key].default;
-            });
-        }
-    }
-
-    // Сохранение настроек в localStorage
-    function saveColumnSettings() {
-        const settings = {};
-        Object.keys(columnSettings).forEach(key => {
-            settings[key] = columnSettings[key].visible;
-        });
-        localStorage.setItem("pagesTableColumns_" + "{{ $project->id }}", JSON.stringify(settings));
-    }
-
-    // Применение настроек к таблице
-    function applyColumnSettings() {
-        Object.keys(columnSettings).forEach(key => {
-            const col = columnSettings[key];
-
-            // Скрываем/показываем столбцы с помощью DataTable
-            if (table && table.columns) {
-                if (col.visible) {
-                    table.columns(col.index).visible(true);
-                } else {
-                    table.columns(col.index).visible(false);
-                }
-            }
-        });
-
-        // Обновляем состояние чекбоксов в меню
-        Object.keys(columnSettings).forEach(key => {
-            const checkbox = document.getElementById("setting-" + key);
-            if (checkbox) {
-                checkbox.checked = columnSettings[key].visible;
-            }
-        });
-    }
-
-    // Обработчик изменения чекбокса
-    function toggleColumn(key) {
-        if (columnSettings[key] && !columnSettings[key].alwaysVisible) {
-            columnSettings[key].visible = !columnSettings[key].visible;
-            saveColumnSettings();
-            applyColumnSettings();
-        }
-    }
-
-// Генерация dropdown меню настроек
-function generateSettingsMenu() {
-    const container = document.getElementById("columnSettingsContainer");
-    if (!container) return;
-
-    container.innerHTML = "";
-
-    Object.keys(columnSettings).forEach(key => {
-        const col = columnSettings[key];
-        const div = document.createElement("div");
-        div.className = "form-check style-check d-flex align-items-center justify-content-between mb-16";
-
-        const label = document.createElement("label");
-        label.className = "form-check-label line-height-1 fw-medium text-secondary-light";
-        label.htmlFor = "setting-" + key;
-        label.innerHTML = `
-            <span class="text-black hover-bg-transparent hover-text-primary d-flex align-items-center gap-3">
-                <span class="w-36-px flex-shrink-0"></span>
-                <span class="text-md fw-semibold mb-0">${col.title}</span>
-            </span>
-        `;
-        if (col.alwaysVisible) {
-            label.style.opacity = "0.6";
-        }
-
-        const input = document.createElement("input");
-        input.className = "form-check-input";
-        input.type = "checkbox";
-        input.id = "setting-" + key;
-        input.checked = col.visible;
-        input.disabled = col.alwaysVisible;
-        input.onchange = function() {
-            toggleColumn(key);
-        };
-
-        div.appendChild(label);
-        div.appendChild(input);
-        container.appendChild(div);
-    });
-}
-
-// Инициализация при загрузке
-document.addEventListener("DOMContentLoaded", function() {
-    initColumnSettings();
-    loadColumnSettings();
-    generateSettingsMenu();
-    applyColumnSettings();
-
-    // Отладка
-    console.log("Column settings initialized:", columnSettings);
-});
-</script>';
-@endphp
-
-<script>
-    // Массив всех активностей для быстрого доступа
-    const activitiesData = @json($activities);
-
-    // Функция для отображения деталей активности в правом блоке
-    function showActivityDetails(activityId) {
-        const activity = activitiesData.find(item => item.id === activityId);
-        const chatMessageList = document.querySelector(".chat-main .chat-message-list");
-
-        if (!activity) {
-            chatMessageList.innerHTML = `
-                <div class="p-24">
-                    <p class="text-gray-500">Активность не найдена</p>
-                </div>
-            `;
-            return;
-        }
-
-        // Отображаем детали активности
-        chatMessageList.innerHTML = `
-            <div class="p-24">
-                <h5 class="text-primary-light fw-semibold mb-16">${activity.title}</h5>
-
-                <div class="mb-16">
-                    <span class="text-secondary-light text-sm">Дата: </span>
-                    <span class="text-primary-light">${activity.formatted_date}</span>
-                </div>
-
-                <div class="mb-16">
-                    <span class="text-secondary-light text-sm">Категория: </span>
-                    <span class="badge bg-primary">${activity.category}</span>
-                </div>
-
-                ${activity.description ? `
-                    <div class="mb-16">
-                        <span class="text-secondary-light text-sm">Описание: </span>
-                        <p class="text-primary-light mt-8">${activity.description}</p>
-                    </div>
-                ` : ''}
-            </div>
-        `;
-    }
-
-    // Функция для показа подсказки при наведении на аннотацию
-    function showAnnotationTooltip(tooltipText) {
-        // Создаем элемент для подсказки
-        const tooltip = document.createElement('div');
-        tooltip.className = 'annotation-tooltip';
-        tooltip.innerHTML = tooltipText.replace(/\n/g, '<br>');
-        tooltip.style.cssText = `
-            position: absolute;
-            background: #333;
-            color: #fff;
-            padding: 8px 12px;
-            border-radius: 4px;
-            font-size: 12px;
-            white-space: pre-wrap;
-            z-index: 1000;
-            pointer-events: none;
-            max-width: 200px;
-        `;
-
-        document.body.appendChild(tooltip);
-
-        // Позиционируем подсказку рядом с курсором
-        document.addEventListener('mousemove', (e) => {
-            tooltip.style.left = e.pageX + 10 + 'px';
-            tooltip.style.top = e.pageY + 10 + 'px';
-        });
-
-        return tooltip;
-    }
-
-    // Функция для скрытия подсказки
-    function hideAnnotationTooltip(tooltip) {
-        if (tooltip) {
-            document.body.removeChild(tooltip);
-        }
-    }
-</script>
-
-    <!-- Modal для показа задач -->
-    <div class="modal fade" id="tasksModal" tabindex="-1" aria-labelledby="tasksModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="tasksModalLabel">Задачи за дату</h5>
+    <!-- Modal для просмотра/редактирования задачи -->
+    <div class="modal fade" id="activityModal" tabindex="-1" aria-labelledby="activityModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content radius-16 bg-base">
+                <div class="modal-header py-16 px-24 border border-top-0 border-start-0 border-end-0">
+                    <h1 class="modal-title fs-5" id="activityModalLabel">Просмотр задачи</h1>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body p-24" id="activityModalBody">
+                    <!-- Содержимое будет загружено через AJAX -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal для списка задач -->
+    <div class="modal fade" id="tasksModal" tabindex="-1" aria-labelledby="tasksModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content radius-16 bg-base">
+                <div class="modal-header py-16 px-24 border border-top-0 border-start-0 border-end-0">
+                    <h1 class="modal-title fs-5" id="tasksModalLabel">Задачи за этот день</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-24">
                     <ul id="tasksList" class="list-unstyled"></ul>
                 </div>
                 <div class="modal-footer">
@@ -651,24 +439,30 @@ document.addEventListener("DOMContentLoaded", function() {
     <!-- Функция для показа модалки с задачами -->
     <script>
         function showTasksModal(tasks) {
-            const tasksList = document.getElementById('tasksList');
-            tasksList.innerHTML = '';
+            const tasksList = document.getElementById("tasksList");
+            tasksList.innerHTML = "";
 
             tasks.forEach(task => {
-                const li = document.createElement('li');
-                li.className = 'd-flex align-items-start gap-3 mb-24 p-16 border-bottom';
+                const li = document.createElement("li");
+                li.className = "d-flex align-items-start gap-3 mb-24 p-16 border-bottom";
 
                 // Категория задачи для цветной метки
                 const categoryClass = {
-                    'content': 'bg-primary',
-                    'links': 'bg-success',
-                    'technical': 'bg-danger',
-                    'meta': 'bg-warning',
-                    'other': 'bg-info'
-                }[task.category] || 'bg-secondary';
+                    "content": "bg-primary",
+                    "links": "bg-success",
+                    "technical": "bg-danger",
+                    "meta": "bg-warning",
+                    "other": "bg-info"
+                }[task.category] || "bg-secondary";
 
                 // Получаем полные данные задачи из глобального массива
-                const fullTask = activitiesData.find(item => item.id === task.id);
+                let fullTask = null;
+                for (let i = 0; i < activitiesData.length; i++) {
+                    if (activitiesData[i].id === task.id) {
+                        fullTask = activitiesData[i];
+                        break;
+                    }
+                }
 
                 li.innerHTML = `
                     <span class="w-8-px h-8-px ${categoryClass} rounded-circle mt-2"></span>
@@ -678,7 +472,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         <span class="badge ${categoryClass} text-sm ms-2">${task.category}</span>
                         ${fullTask?.description ? `
                             <p class="text-sm text-primary-light mt-8">${fullTask.description}</p>
-                        ` : ''}
+                        ` : ""}
                     </div>
                     <div class="d-flex gap-2">
                         <button type="button" class="btn btn-sm btn-info" onclick="showActivityDetails(${task.id})" title="Просмотреть детали">
@@ -693,7 +487,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 tasksList.appendChild(li);
             });
 
-            const modal = new bootstrap.Modal(document.getElementById('tasksModal'));
+            const modal = new bootstrap.Modal(document.getElementById("tasksModal"));
             modal.show();
         }
     </script>
@@ -873,7 +667,7 @@ document.addEventListener("DOMContentLoaded", function() {
             </div>
         </div>
     </div>
-</div>
+</div}
 
 
 
@@ -1009,18 +803,18 @@ document.addEventListener("DOMContentLoaded", function() {
                     <div class="mb-3">
                         <label for="pagesData" class="form-label">Данные страниц</label>
                         <textarea class="form-control" id="pagesData" name="pages_data" rows="10" placeholder="Введите данные страниц через точку с запятой. Пример:
-/about|О нас|section|о нас, компания;
-/contact|Контакты|card|контакты, обратная связь;
-/blog|Блог|section|блог, статьи;
-/blog/post-1|Первый пост|card|статья, первый пост;"></textarea>
-                        <div class="text-light mt-2">Формат строки: URL|Заголовок|Тип|Ключевые слова|ID родителя;<br>
+/about시오 нас|section|о нас, компания;
+/contact-КОНТАКТЫ|card|контакты, обратная связь;
+/blog-Блог|section|блог, статьи;
+/blog/post-1-Первый пост|card|статья, первый пост;"></textarea>
+                        <div class="text-light mt-2">Формат строки: URL|Заголовок |Тип|Keywords|ID родителя;<br>
 - URL (обязательно) - адрес страницы<br>
 - Заголовок (необязательно) - название страницы<br>
 - Тип (необязательно) - home/section/card (по умолчанию card)<br>
-- Ключевые слова (необязательно) - через запятую<br>
+- Keywords (необязательно) - через запятую<br>
 - ID родителя (необязательно) - ID страницы-родителя<br>
-Пример: /about|О нас|section|о нас, компания;<br>
-Пример с родителем: /about/team|Команда|card|команда, сотрудники|2;
+Пример: /aboutmico нас|section|о нас, компания;<br>
+Пример с родителем: /about/team-Команда|card|команда, сотрудники|2;
                         </div>
                     </div>
                 </div>
