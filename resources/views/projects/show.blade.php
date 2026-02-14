@@ -82,42 +82,43 @@ $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></scri
         // График за месяц
         // Данные о задачах по датам
         const activitiesByDate = ' . json_encode($activitiesByDate) . ';
+        const chartData = ' . json_encode($chartData) . ';
+        const annotationsData = ' . $annotationsJson . ';
 
-        // Формируем маркеры для графика
-        const markersData = [];
-        ' . $annotationsJson . '.forEach(annotation => {
-            if (annotation.tasks) {
-                const taskCount = annotation.tasks.length;
+        // Формируем аннотации для вертикальных линий
+        const xaxisAnnotations = annotationsData.map(annotation => {
+            const taskCount = annotation.tasks ? annotation.tasks.length : 0;
 
-                // Определяем букву для кружка
-                const labelText = taskCount > 1 ? "У" : annotation.tasks[0].category.charAt(0);
+            // Цвет по типу задачи
+            const colors = {
+                content: "#FF9F29",
+                links: "#28C76F",
+                technical: "#FF4560",
+                meta: "#7367F0",
+                other: "#00CFE8"
+            };
 
-                // Цвет по типу задачи
-                const colors = {
-                    content: "#FF9F29",
-                    links: "#28C76F",
-                    technical: "#FF4560",
-                    meta: "#7367F0",
-                    other: "#00CFE8"
-                };
+            const borderColor = taskCount > 1 ? "#FF4560" : (colors[annotation.tasks[0].category] || "#9F9F9F");
 
-                const markerColor = taskCount > 1 ? "#FF4560" : (colors[annotation.tasks[0].category] || "#9F9F9F");
-
-                markersData.push({
-                    x: annotation.x,
-                    y: 0, // Позиционируем маркер на вершине графика
-                    symbol: "circle",
-                    fillColor: markerColor,
-                    strokeColor: markerColor,
-                    size: taskCount > 1 ? 12 : 10,
-                    strokeWidth: 2,
-                    text: labelText,
-                    textColor: "#fff",
-                    fontSize: taskCount > 1 ? 8 : 7,
-                    fontWeight: "bold",
-                    tasks: annotation.tasks
-                });
-            }
+            return {
+                x: annotation.x,
+                borderColor: borderColor,
+                borderWidth: 2,
+                strokeDashArray: 0,
+                opacity: 0.8,
+                label: {
+                    borderColor: borderColor,
+                    style: {
+                        color: "#fff",
+                        background: borderColor,
+                        fontSize: "10px",
+                        fontWeight: "bold",
+                        padding: { left: 5, right: 5, top: 2, bottom: 2 }
+                    },
+                    text: taskCount > 1 ? taskCount + " задач" : "1 задача",
+                    position: "top"
+                }
+            };
         });
 
         var monthOptions = {
@@ -135,31 +136,17 @@ $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></scri
                     show: false
                 },
                 events: {
-                    markerClick: function(event, chartContext, config) {
-                        // Показываем модал с задачами
-                        const taskData = markersData.find(marker => marker.x === config.dataPointIndex);
-                        if (taskData) {
-                            showTasksModal(taskData.tasks);
+                    mouseMove: function(e, chartContext, config) {
+                        // Показываем кастомный тултип при наведении на точку с задачами
+                        if (config.dataPointIndex >= 0) {
+                            const annotation = annotationsData.find(a => a.x === config.dataPointIndex);
+                            if (annotation && annotation.tasks) {
+                                showCustomTooltip(e, annotation, chartData);
+                            }
                         }
                     },
-                    markerMouseEnter: function(event, chartContext, config) {
-                        // Показываем подсказку
-                        const taskData = markersData.find(marker => marker.x === config.dataPointIndex);
-                        if (taskData) {
-                            let tooltipText = "";
-                            taskData.tasks.forEach((task, index) => {
-                                tooltipText += (index + 1) + ". " + task.title + "\\n";
-                            });
-                            const tooltip = showAnnotationTooltip(tooltipText);
-                            config.tooltip = tooltip;
-                        }
-                    },
-                    markerMouseLeave: function(event, chartContext, config) {
-                        // Скрываем подсказку
-                        if (config.tooltip) {
-                            hideAnnotationTooltip(config.tooltip);
-                            config.tooltip = null;
-                        }
+                    mouseLeave: function(e, chartContext, config) {
+                        hideCustomTooltip();
                     }
                 }
             },
@@ -187,50 +174,64 @@ $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></scri
                 width: 3
             },
             markers: {
-                size: 0, // Отключаем стандартные маркеры
-                colors: ["#487FFF"]
+                size: 4,
+                colors: ["#487FFF"],
+                hover: {
+                    size: 6
+                }
             },
             grid: {
                 strokeDashArray: 4
             },
             tooltip: {
-                y: {
-                    formatter: function(val) {
-                        return val + " посещений"
+                enabled: true,
+                custom: function({ series, seriesIndex, dataPointIndex, w }) {
+                    const annotation = annotationsData.find(a => a.x === dataPointIndex);
+                    const visits = series[seriesIndex][dataPointIndex];
+                    const date = chartData.categories[dataPointIndex];
+
+                    let html = `<div class="custom-chart-tooltip" style="background: #fff; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); padding: 12px; min-width: 200px; max-width: 300px;">`;
+                    html += `<div style="font-weight: 600; color: #333; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 8px;">📅 ${date}</div>`;
+                    html += `<div style="color: #487FFF; font-weight: 600; margin-bottom: 8px;">👥 ${visits} посещений</div>`;
+
+                    if (annotation && annotation.tasks && annotation.tasks.length > 0) {
+                        html += `<div style="border-top: 1px solid #eee; padding-top: 8px; margin-top: 8px;">`;
+                        html += `<div style="font-weight: 600; color: #666; margin-bottom: 6px; font-size: 12px;">📋 Задачи (${annotation.tasks.length}):</div>`;
+                        annotation.tasks.forEach((task, idx) => {
+                            const colors = {
+                                content: "#FF9F29",
+                                links: "#28C76F",
+                                technical: "#FF4560",
+                                meta: "#7367F0",
+                                other: "#00CFE8"
+                            };
+                            const color = colors[task.category] || "#9F9F9F";
+                            html += `<div class="task-item" data-task-id="${task.id}" style="display: flex; align-items: center; padding: 4px 0; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background=\'#f5f5f5\'" onmouseout="this.style.background=\'transparent\'">`;
+                            html += `<span style="width: 8px; height: 8px; border-radius: 50%; background: ${color}; margin-right: 8px; flex-shrink: 0;"></span>`;
+                            html += `<span style="color: #333; font-size: 12px; text-decoration: underline; text-decoration-style: dotted;">${task.title}</span>`;
+                            html += `</div>`;
+                        });
+                        html += `</div>`;
                     }
+
+                    html += `</div>`;
+                    return html;
                 }
             },
             annotations: {
-                yaxis: markersData.map(marker => ({
-                    y: marker.y,
-                    y2: marker.y,
-                    x: marker.x,
-                    x2: marker.x,
-                    borderColor: marker.fillColor,
-                    borderWidth: marker.strokeWidth,
-                    label: {
-                        borderColor: marker.fillColor,
-                        style: {
-                            color: marker.textColor,
-                            background: marker.fillColor,
-                            fontSize: marker.fontSize,
-                            fontWeight: marker.fontWeight,
-                            padding: 0,
-                            width: marker.size + "px",
-                            height: marker.size + "px",
-                            borderRadius: "50%",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center"
-                        },
-                        text: marker.text,
-                        position: "top"
-                    },
-                    tasks: marker.tasks
-                })),
-                xaxis: ' . $annotationsJson . '
+                xaxis: xaxisAnnotations
             }
         };
+
+        // Обработчик клика по задачам в тултипе
+        document.addEventListener("click", function(e) {
+            if (e.target.closest(".task-item")) {
+                const taskId = parseInt(e.target.closest(".task-item").dataset.taskId);
+                if (taskId) {
+                    showActivityDetails(taskId);
+                }
+            }
+        });
         var monthChart = new ApexCharts(document.querySelector("#lineMonthChart"), monthOptions);
         monthChart.render();
 
@@ -553,43 +554,43 @@ document.addEventListener("DOMContentLoaded", function() {
     // Массив всех активностей для быстрого доступа
     const activitiesData = @json($activities);
 
-    // Функция для отображения деталей активности в правом блоке
+    // Функция для отображения деталей активности в модальном окне
     function showActivityDetails(activityId) {
         const activity = activitiesData.find(item => item.id === activityId);
-        const chatMessageList = document.querySelector(".chat-main .chat-message-list");
 
         if (!activity) {
-            chatMessageList.innerHTML = `
-                <div class="p-24">
-                    <p class="text-gray-500">Активность не найдена</p>
-                </div>
-            `;
+            alert('Активность не найдена');
             return;
         }
 
-        // Отображаем детали активности
-        chatMessageList.innerHTML = `
-            <div class="p-24">
-                <h5 class="text-primary-light fw-semibold mb-16">${activity.title}</h5>
+        // Категория задачи для цветной метки
+        const categoryClass = {
+            'content': 'bg-warning',
+            'links': 'bg-success',
+            'technical': 'bg-danger',
+            'meta': 'bg-primary',
+            'other': 'bg-info'
+        }[activity.category] || 'bg-secondary';
 
-                <div class="mb-16">
-                    <span class="text-secondary-light text-sm">Дата: </span>
-                    <span class="text-primary-light">${activity.formatted_date}</span>
-                </div>
+        const categoryLabel = {
+            'content': 'Контент',
+            'links': 'Ссылки',
+            'technical': 'Техническое',
+            'meta': 'Мета-теги',
+            'other': 'Другое'
+        }[activity.category] || activity.category;
 
-                <div class="mb-16">
-                    <span class="text-secondary-light text-sm">Категория: </span>
-                    <span class="badge bg-primary">${activity.category}</span>
-                </div>
+        // Заполняем модальное окно
+        document.getElementById('activityDetailTitle').textContent = activity.title;
+        document.getElementById('activityDetailDate').textContent = activity.formatted_date;
+        document.getElementById('activityDetailCategory').textContent = categoryLabel;
+        document.getElementById('activityDetailCategory').className = `badge ${categoryClass}`;
+        document.getElementById('activityDetailDescription').innerHTML = activity.description ? activity.description.replace(/\n/g, '<br>') : '<span class="text-secondary">Нет описания</span>';
+        document.getElementById('activityDetailEditBtn').href = `/projects/{{ $project->id }}/activities/${activity.id}/edit`;
 
-                ${activity.description ? `
-                    <div class="mb-16">
-                        <span class="text-secondary-light text-sm">Описание: </span>
-                        <p class="text-primary-light mt-8">${activity.description}</p>
-                    </div>
-                ` : ''}
-            </div>
-        `;
+        // Показываем модальное окно
+        const modal = new bootstrap.Modal(document.getElementById('activityDetailModal'));
+        modal.show();
     }
 
     // Функция для показа подсказки при наведении на аннотацию
@@ -643,6 +644,36 @@ document.addEventListener("DOMContentLoaded", function() {
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal для деталей задачи -->
+    <div class="modal fade" id="activityDetailModal" tabindex="-1" aria-labelledby="activityDetailModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="activityDetailTitle">Детали задачи</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-16">
+                        <span class="text-secondary-light text-sm">Дата: </span>
+                        <span class="text-primary-light" id="activityDetailDate"></span>
+                    </div>
+                    <div class="mb-16">
+                        <span class="text-secondary-light text-sm">Категория: </span>
+                        <span class="badge" id="activityDetailCategory"></span>
+                    </div>
+                    <div class="mb-16">
+                        <span class="text-secondary-light text-sm">Описание:</span>
+                        <div class="text-primary-light mt-8 p-12 bg-light rounded" id="activityDetailDescription"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                    <a href="#" class="btn btn-primary" id="activityDetailEditBtn">Редактировать</a>
                 </div>
             </div>
         </div>

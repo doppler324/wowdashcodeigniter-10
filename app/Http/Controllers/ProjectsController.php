@@ -116,7 +116,9 @@ class ProjectsController extends Controller
                         'borderColor' => $borderColor,
                         'borderWidth' => 3, // Жирная линия
                         'tasks' => $activitiesByDate[$fullDate],
-                        'tooltipText' => '' // Мы используем подсказку для маркера
+                        'tooltipText' => '', // Мы используем подсказку для маркера
+                        'date' => $fullDate,
+                        'visits' => $chartData['data'][$index] ?? 0
                     ];
                 }
             }
