@@ -1,10 +1,41 @@
 @extends('layout.layout')
 
-@php
-$title = 'Просмотр проекта';
-$subTitle = 'Проект: ' . $project->name;
-$style = '
+{{-- Переменные для layout --}}
+<?php $title = 'Просмотр проекта'; ?>
+<?php $subTitle = 'Проект: ' . $project->name; ?>
+
+{{-- Стили для tooltip --}}
 <style>
+.tooltip-content {
+    padding: 12px;
+    min-width: 200px;
+    font-family: Arial, sans-serif;
+}
+.tooltip-visits {
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: #333;
+}
+.tooltip-tasks-title {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 8px;
+    font-weight: bold;
+    border-top: 1px solid #ddd;
+    padding-top: 8px;
+}
+.tooltip-task {
+    cursor: pointer;
+    padding: 6px 8px;
+    margin-bottom: 4px;
+    background: #f5f5f5;
+    border-radius: 4px;
+    font-size: 13px;
+}
+.tooltip-task:hover {
+    background: #e0e0e0;
+}
 .pages-table .bordered-table {
     table-layout: auto;
     width: 100%;
@@ -67,19 +98,48 @@ $style = '
     border-radius: 8px;
     font-size: 14px;
 }
-.search-input:focus {
-    outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
-}
 </style>
-';
-$annotationsJson = json_encode($annotations);
-$script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></script>
-<script src="' . asset('assets/js/flatpickr.js') . '"></script>
+
+{{-- JavaScript для графика --}}
+<script src="{{ asset('assets/js/lineChartPageChart.js') }}"></script>
+<script src="{{ asset('assets/js/flatpickr.js') }}"></script>
 <script>
+    // Глобальные переменные для задач
+    const annotationsData = {!! $annotationsJson !!};
+    const activitiesByDate = {!! json_encode($activitiesByDate) !!};
+
+    // Функция для форматирования tooltip
+    function getTooltipHtml(dataPointIndex) {
+        const annotation = annotationsData[dataPointIndex];
+        const chartDataLocal = {!! $chartDataJson !!};
+        const val = chartDataLocal.data[dataPointIndex] || 0;
+        let html = "<div class='tooltip-content'>";
+        html += "<div class='tooltip-visits'>" + val + " посещений</div>";
+
+        if (annotation && annotation.tasks && annotation.tasks.length > 0) {
+            html += "<div class='tooltip-tasks-title'>Задачи:</div>";
+
+            for (let i = 0; i < annotation.tasks.length; i++) {
+                const task = annotation.tasks[i];
+                html += "<div class='tooltip-task' onclick='showTaskFromTooltip(" + dataPointIndex + ", " + i + ")'>" + (i + 1) + ". " + task.title + "</div>";
+            }
+        }
+
+        html += "</div>";
+        return html;
+    }
+
+    // Функция для показа задачи из tooltip
+    function showTaskFromTooltip(dataPointIndex, taskIndex) {
+        const annotation = annotationsData[dataPointIndex];
+        if (annotation && annotation.tasks && annotation.tasks[taskIndex]) {
+            showTasksModal([annotation.tasks[taskIndex]]);
+        }
+    }
+
     document.addEventListener("DOMContentLoaded", function() {
         // График за месяц
+<<<<<<< HEAD
         // Данные о задачах по датам
         const activitiesByDate = ' . json_encode($activitiesByDate) . ';
         const chartData = ' . json_encode($chartData) . ';
@@ -119,22 +179,52 @@ $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></scri
                     position: "top"
                 }
             };
+=======
+        const chartData = {!! $chartDataJson !!};
+
+        // Цвета по типу задачи
+        const categoryColors = {
+            content: "#FF9F29",
+            links: "#28C76F",
+            technical: "#FF4560",
+            meta: "#7367F0",
+            other: "#00CFE8"
+        };
+
+        // Формируем размеры маркеров для каждой точки данных
+        const markerSizes = chartData.data.map((value, index) => {
+            const annotation = annotationsData[index];
+            if (annotation && annotation.tasks) {
+                return annotation.tasks.length > 1 ? 10 : 8;
+            }
+            return 0; // Обычные точки без маркера
+>>>>>>> 608c9e4062933a547c75993e1cf1356dae1b3551
         });
 
-        var monthOptions = {
+        // Формируем цвета маркеров для каждой точки данных
+        const markerColors = chartData.data.map((value, index) => {
+            const annotation = annotationsData[index];
+            if (annotation && annotation.tasks && annotation.tasks.length > 0) {
+                // Берем цвет первой задачи
+                const firstTask = annotation.tasks[0];
+                return categoryColors[firstTask.category] || "#7367F0";
+            }
+            return "#5b5b5b"; // Обычный цвет для точек без задач
+        });
+
+        // График за месяц
+        var optionsMonth = {
             series: [{
-                name: "Посещения",
-                data: ' . json_encode($chartData['data']) . '
+                name: "Visits",
+                data: chartData.data
             }],
             chart: {
-                height: 264,
-                type: "line",
-                zoom: {
-                    enabled: false
-                },
+                height: 350,
+                type: "area",
                 toolbar: {
                     show: false
                 },
+<<<<<<< HEAD
                 events: {
                     mouseMove: function(e, chartContext, config) {
                         // Показываем кастомный тултип при наведении на точку с задачами
@@ -147,32 +237,30 @@ $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></scri
                     },
                     mouseLeave: function(e, chartContext, config) {
                         hideCustomTooltip();
+=======
+                animations: {
+                    enabled: true,
+                    easing: "linear",
+                    dynamicAnimation: {
+                        speed: 1000
+>>>>>>> 608c9e4062933a547c75993e1cf1356dae1b3551
                     }
-                }
-            },
-            colors: ["#487FFF"],
-            dataLabels: {
-                enabled: true
-            },
-            xaxis: {
-                categories: ' . json_encode($chartData['categories']) . ',
-                tickAmount: ' . count($chartData['categories']) . ',
-                labels: {
-                    rotate: 0,
-                    style: {
-                        fontSize: "12px"
-                    }
-                }
-            },
-            yaxis: {
-                title: {
-                    text: "Посещения"
                 },
-                min: 0
+                events: {
+                    dataPointSelection: function(event, chartContext, config) {
+                        const dataPointIndex = config.dataPointIndex;
+                        showTaskFromTooltip(dataPointIndex, 0);
+                    }
+                }
+            },
+            colors: ["#5b5b5b"],
+            dataLabels: {
+                enabled: false
             },
             stroke: {
-                width: 3
+                curve: "smooth"
             },
+<<<<<<< HEAD
             markers: {
                 size: 4,
                 colors: ["#487FFF"],
@@ -212,6 +300,45 @@ $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></scri
                             html += `</div>`;
                         });
                         html += `</div>`;
+=======
+            xaxis: {
+                categories: chartData.categories,
+                labels: {
+                    show: true,
+                    rotate: -45,
+                    rotateAlways: false,
+                    hideOverlappingLabels: true,
+                    showDuplicates: false,
+                    trim: false,
+                    minHeight: undefined,
+                    maxHeight: 120,
+                    style: {
+                        colors: [],
+                        fontSize: "12px",
+                        fontFamily: "Helvetica, Arial, sans-serif",
+                        fontWeight: 400,
+                        cssClass: "apexcharts-xaxis-label"
+                    },
+                    offsetX: 0,
+                    offsetY: 0,
+                    format: undefined,
+                    formatter: undefined,
+                    dateTimeFormat: undefined
+                },
+                tickAmount: undefined,
+                tickPlacement: "on",
+                min: undefined,
+                max: undefined,
+                range: undefined,
+                floating: false,
+                decimalsInFloat: undefined,
+                overwriteCategories: undefined
+            },
+            yaxis: {
+                labels: {
+                    formatter: function(val) {
+                        return Math.round(val);
+>>>>>>> 608c9e4062933a547c75993e1cf1356dae1b3551
                     }
 
                     html += `</div>`;
@@ -219,6 +346,7 @@ $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></scri
                 }
             },
             annotations: {
+<<<<<<< HEAD
                 xaxis: xaxisAnnotations
             }
         };
@@ -262,53 +390,168 @@ $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></scri
                     rotate: 0,
                     style: {
                         fontSize: "12px"
+=======
+                xaxis: chartData.annotations.map(ann => ({
+                    x: ann.x,
+                    borderColor: ann.borderColor,
+                    borderWidth: 2,
+                    label: {
+                        borderColor: ann.borderColor,
+                        borderRadius: 6,
+                        borderWidth: 1,
+                        style: {
+                            fontSize: "12px",
+                            color: "#fff",
+                            background: ann.borderColor
+                        },
+                        text: ann.labelText || ""
+>>>>>>> 608c9e4062933a547c75993e1cf1356dae1b3551
                     }
-                }
-            },
-            yaxis: {
-                title: {
-                    text: "Посещения"
-                },
-            },
-            stroke: {
-                width: 3
-            },
-            markers: {
-                size: 5,
-                colors: ["#28C76F"]
-            },
-            grid: {
-                strokeDashArray: 4
+                }))
             },
             tooltip: {
-                y: {
-                    formatter: function(val) {
-                        return val + " посещений"
-                    }
+                custom: function(options) {
+                    return getTooltipHtml(options.dataPointIndex);
+                }
+            },
+            markers: {
+                size: markerSizes,
+                colors: markerColors,
+                strokeColors: "#fff",
+                strokeWidth: 2,
+                strokeOpacity: 0.9,
+                strokeDashArray: 0,
+                fillOpacity: 1,
+                discrete: [],
+                shape: "circle",
+                radius: 2,
+                offsetX: 0,
+                offsetY: 0,
+                onClick: undefined,
+                onDblClick: undefined,
+                showNullDataPoints: true,
+                hover: {
+                    size: undefined,
+                    sizeOffset: 3
                 }
             }
         };
-        var yearChart = new ApexCharts(document.querySelector("#lineYearChart"), yearOptions);
-        yearChart.render();
+
+        var chartMonth = new ApexCharts(document.querySelector("#lineMonthChart"), optionsMonth);
+        chartMonth.render();
+
+        // График за год
+        var optionsYear = {
+            series: [{
+                name: "Visits",
+                data: chartData.yearData || chartData.data
+            }],
+            chart: {
+                height: 350,
+                type: "area",
+                toolbar: {
+                    show: false
+                }
+            },
+            colors: ["#5b5b5b"],
+            dataLabels: {
+                enabled: false
+            },
+            stroke: {
+                curve: "smooth"
+            },
+            xaxis: {
+                categories: chartData.yearCategories || chartData.categories,
+                labels: {
+                    show: true,
+                    rotate: -45,
+                    rotateAlways: false,
+                    hideOverlappingLabels: true,
+                    showDuplicates: false,
+                    trim: false,
+                    minHeight: undefined,
+                    maxHeight: 120,
+                    style: {
+                        colors: [],
+                        fontSize: "12px",
+                        fontFamily: "Helvetica, Arial, sans-serif",
+                        fontWeight: 400,
+                        cssClass: "apexcharts-xaxis-label"
+                    },
+                    offsetX: 0,
+                    offsetY: 0,
+                    format: undefined,
+                    formatter: undefined,
+                    dateTimeFormat: undefined
+                },
+                tickAmount: undefined,
+                tickPlacement: "on",
+                min: undefined,
+                max: undefined,
+                range: undefined,
+                floating: false,
+                decimalsInFloat: undefined,
+                overwriteCategories: undefined
+            },
+            yaxis: {
+                labels: {
+                    formatter: function(val) {
+                        return Math.round(val);
+                    }
+                }
+            },
+            annotations: {
+                xaxis: chartData.annotations.map(ann => ({
+                    x: ann.x,
+                    borderColor: ann.borderColor,
+                    borderWidth: 2,
+                    label: {
+                        borderColor: ann.borderColor,
+                        borderRadius: 6,
+                        borderWidth: 1,
+                        style: {
+                            fontSize: "12px",
+                            color: "#fff",
+                            background: ann.borderColor
+                        },
+                        text: ann.labelText || ""
+                    }
+                }))
+            },
+            tooltip: {
+                custom: function(options) {
+                    return getTooltipHtml(options.dataPointIndex);
+                }
+            },
+            markers: {
+                size: markerSizes,
+                colors: markerColors,
+                strokeColors: "#fff",
+                strokeWidth: 2,
+                strokeOpacity: 0.9,
+                strokeDashArray: 0,
+                fillOpacity: 1,
+                discrete: [],
+                shape: "circle",
+                radius: 2,
+                offsetX: 0,
+                offsetY: 0,
+                onClick: undefined,
+                onDblClick: undefined,
+                showNullDataPoints: true,
+                hover: {
+                    size: undefined,
+                    sizeOffset: 3
+                }
+            }
+        };
+
+        var chartYear = new ApexCharts(document.querySelector("#lineYearChart"), optionsYear);
+        chartYear.render();
     });
 </script>
-<script>
-    // Flat pickr or date picker js
-    function getDatePicker(receiveID) {
-        flatpickr(receiveID, {
-            enableTime: true,
-            dateFormat: "Y-m-d H:i",
-        });
-    }
-    getDatePicker("#startDate");
-</script>
-<script>
-    // Инициализация DataTable для ключевых слов
-    var keywordsTable;
-    if (typeof DataTable !== "undefined") {
-        var savedKeywordsPageLength = localStorage.getItem("keywordsTableLength");
-        var initialKeywordsPageLength = savedKeywordsPageLength ? parseInt(savedKeywordsPageLength) : 10;
 
+<<<<<<< HEAD
         keywordsTable = new DataTable("#keywordsTable", {
             paging: true,
             lengthChange: true,
@@ -637,9 +880,32 @@ document.addEventListener("DOMContentLoaded", function() {
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="tasksModalLabel">Задачи за дату</h5>
+=======
+    <!-- Modal для просмотра/редактирования задачи -->
+    <div class="modal fade" id="activityModal" tabindex="-1" aria-labelledby="activityModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content radius-16 bg-base">
+                <div class="modal-header py-16 px-24 border border-top-0 border-start-0 border-end-0">
+                    <h1 class="modal-title fs-5" id="activityModalLabel">Просмотр задачи</h1>
+>>>>>>> 608c9e4062933a547c75993e1cf1356dae1b3551
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body p-24" id="activityModalBody">
+                    <!-- Содержимое будет загружено через AJAX -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal для списка задач -->
+    <div class="modal fade" id="tasksModal" tabindex="-1" aria-labelledby="tasksModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content radius-16 bg-base">
+                <div class="modal-header py-16 px-24 border border-top-0 border-start-0 border-end-0">
+                    <h1 class="modal-title fs-5" id="tasksModalLabel">Задачи за этот день</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-24">
                     <ul id="tasksList" class="list-unstyled"></ul>
                 </div>
                 <div class="modal-footer">
@@ -682,24 +948,30 @@ document.addEventListener("DOMContentLoaded", function() {
     <!-- Функция для показа модалки с задачами -->
     <script>
         function showTasksModal(tasks) {
-            const tasksList = document.getElementById('tasksList');
-            tasksList.innerHTML = '';
+            const tasksList = document.getElementById("tasksList");
+            tasksList.innerHTML = "";
 
             tasks.forEach(task => {
-                const li = document.createElement('li');
-                li.className = 'd-flex align-items-start gap-3 mb-24 p-16 border-bottom';
+                const li = document.createElement("li");
+                li.className = "d-flex align-items-start gap-3 mb-24 p-16 border-bottom";
 
                 // Категория задачи для цветной метки
                 const categoryClass = {
-                    'content': 'bg-primary',
-                    'links': 'bg-success',
-                    'technical': 'bg-danger',
-                    'meta': 'bg-warning',
-                    'other': 'bg-info'
-                }[task.category] || 'bg-secondary';
+                    "content": "bg-primary",
+                    "links": "bg-success",
+                    "technical": "bg-danger",
+                    "meta": "bg-warning",
+                    "other": "bg-info"
+                }[task.category] || "bg-secondary";
 
                 // Получаем полные данные задачи из глобального массива
-                const fullTask = activitiesData.find(item => item.id === task.id);
+                let fullTask = null;
+                for (let i = 0; i < activitiesData.length; i++) {
+                    if (activitiesData[i].id === task.id) {
+                        fullTask = activitiesData[i];
+                        break;
+                    }
+                }
 
                 li.innerHTML = `
                     <span class="w-8-px h-8-px ${categoryClass} rounded-circle mt-2"></span>
@@ -709,7 +981,7 @@ document.addEventListener("DOMContentLoaded", function() {
                         <span class="badge ${categoryClass} text-sm ms-2">${task.category}</span>
                         ${fullTask?.description ? `
                             <p class="text-sm text-primary-light mt-8">${fullTask.description}</p>
-                        ` : ''}
+                        ` : ""}
                     </div>
                     <div class="d-flex gap-2">
                         <button type="button" class="btn btn-sm btn-info" onclick="showActivityDetails(${task.id})" title="Просмотреть детали">
@@ -724,7 +996,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 tasksList.appendChild(li);
             });
 
-            const modal = new bootstrap.Modal(document.getElementById('tasksModal'));
+            const modal = new bootstrap.Modal(document.getElementById("tasksModal"));
             modal.show();
         }
     </script>
@@ -904,7 +1176,7 @@ document.addEventListener("DOMContentLoaded", function() {
             </div>
         </div>
     </div>
-</div>
+</div}
 
 
 
@@ -1040,18 +1312,18 @@ document.addEventListener("DOMContentLoaded", function() {
                     <div class="mb-3">
                         <label for="pagesData" class="form-label">Данные страниц</label>
                         <textarea class="form-control" id="pagesData" name="pages_data" rows="10" placeholder="Введите данные страниц через точку с запятой. Пример:
-/about|О нас|section|о нас, компания;
-/contact|Контакты|card|контакты, обратная связь;
-/blog|Блог|section|блог, статьи;
-/blog/post-1|Первый пост|card|статья, первый пост;"></textarea>
-                        <div class="text-light mt-2">Формат строки: URL|Заголовок|Тип|Ключевые слова|ID родителя;<br>
+/about시오 нас|section|о нас, компания;
+/contact-КОНТАКТЫ|card|контакты, обратная связь;
+/blog-Блог|section|блог, статьи;
+/blog/post-1-Первый пост|card|статья, первый пост;"></textarea>
+                        <div class="text-light mt-2">Формат строки: URL|Заголовок |Тип|Keywords|ID родителя;<br>
 - URL (обязательно) - адрес страницы<br>
 - Заголовок (необязательно) - название страницы<br>
 - Тип (необязательно) - home/section/card (по умолчанию card)<br>
-- Ключевые слова (необязательно) - через запятую<br>
+- Keywords (необязательно) - через запятую<br>
 - ID родителя (необязательно) - ID страницы-родителя<br>
-Пример: /about|О нас|section|о нас, компания;<br>
-Пример с родителем: /about/team|Команда|card|команда, сотрудники|2;
+Пример: /aboutmico нас|section|о нас, компания;<br>
+Пример с родителем: /about/team-Команда|card|команда, сотрудники|2;
                         </div>
                     </div>
                 </div>
