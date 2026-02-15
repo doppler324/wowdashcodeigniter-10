@@ -59,4 +59,20 @@ class Project extends Model
     {
         return $this->hasManyThrough(Keyword::class, Page::class);
     }
+
+    /**
+     * Get the settings for the project.
+     */
+    public function settings()
+    {
+        return $this->hasMany(Setting::class);
+    }
+
+    /**
+     * Get the setting for the project (single).
+     */
+    public function setting()
+    {
+        return $this->hasOne(Setting::class);
+    }
 }

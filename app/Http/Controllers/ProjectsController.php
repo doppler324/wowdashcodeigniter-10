@@ -32,8 +32,8 @@ class ProjectsController extends Controller
         $pages = $project->pages()->get();
         $activities = $project->activities()->orderBy('event_date', 'desc')->get();
         $keywords = $project->keywords()->get();
-        $chartData = $this->getChartData();
-        $yearlyChartData = $this->getYearlyChartData();
+        $chartData = $this->getChartData($project);
+        $yearlyChartData = $this->getYearlyChartData($project);
 
         // Группируем активности по датам для графика
         $activitiesByDate = $activities->groupBy(function($item) {
@@ -133,10 +133,10 @@ class ProjectsController extends Controller
     /**
      * Get monthly chart data for last year.
      */
-    private function getYearlyChartData()
+    private function getYearlyChartData($project)
     {
         try {
-            $settings = Setting::where('user_id', auth()->id())->first();
+            $settings = $project->setting ?? Setting::where('user_id', auth()->id())->first();
 
             \Illuminate\Support\Facades\Log::info('Yandex Metrika settings:', [
                 'settings' => $settings,
@@ -225,10 +225,10 @@ class ProjectsController extends Controller
     /**
      * Get chart data from Yandex Metrika API for last month.
      */
-    private function getChartData()
+    private function getChartData($project)
     {
         try {
-            $settings = Setting::where('user_id', auth()->id())->first();
+            $settings = $project->setting ?? Setting::where('user_id', auth()->id())->first();
 
             \Illuminate\Support\Facades\Log::info('Settings found: ' . json_encode($settings));
 

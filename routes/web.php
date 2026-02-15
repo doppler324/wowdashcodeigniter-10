@@ -55,6 +55,15 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/activities/{activity}/edit', [ActivitiesController::class, 'edit'])->name('projects.activities.edit');
         Route::put('/activities/{activity}', [ActivitiesController::class, 'update'])->name('projects.activities.update');
         Route::delete('/activities/{activity}', [ActivitiesController::class, 'destroy'])->name('projects.activities.destroy');
+
+        // Settings
+        Route::get('/settings', [App\Http\Controllers\ProjectSettingController::class, 'index'])->name('projects.settings.index');
+        Route::get('/settings/create', [App\Http\Controllers\ProjectSettingController::class, 'create'])->name('projects.settings.create');
+        Route::post('/settings', [App\Http\Controllers\ProjectSettingController::class, 'store'])->name('projects.settings.store');
+        Route::get('/settings/{setting}', [App\Http\Controllers\ProjectSettingController::class, 'show'])->name('projects.settings.show');
+        Route::get('/settings/{setting}/edit', [App\Http\Controllers\ProjectSettingController::class, 'edit'])->name('projects.settings.edit');
+        Route::put('/settings/{setting}', [App\Http\Controllers\ProjectSettingController::class, 'update'])->name('projects.settings.update');
+        Route::delete('/settings/{setting}', [App\Http\Controllers\ProjectSettingController::class, 'destroy'])->name('projects.settings.destroy');
     });
 
     // Settings

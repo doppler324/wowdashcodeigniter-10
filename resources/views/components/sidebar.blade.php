@@ -65,14 +65,14 @@
                     <span>Задачи</span>
                 </a>
             </li>
-            @endif
-            @endif
             <li>
-                <a href="{{ route('settings.index') }}">
+                <a href="{{ route('projects.settings.index', $currentProject) }}">
                     <iconify-icon icon="icon-park-outline:setting-two" class="menu-icon"></iconify-icon>
                     <span>Настройки</span>
                 </a>
             </li>
+            @endif
+            @endif
 
             <li class="sidebar-menu-group-title">Application</li>
 
