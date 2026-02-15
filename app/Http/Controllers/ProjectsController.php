@@ -47,7 +47,7 @@ class ProjectsController extends Controller
                     'formatted_date' => $activity->formatted_date
                 ];
             })->toArray();
-        });
+        })->toArray(); // Преобразуем в массив для удобства
 
         // Формируем маркеры для графика
         $markers = [];
@@ -96,9 +96,19 @@ class ProjectsController extends Controller
         // Формируем аннотации для вертикальных линий
         $annotations = [];
         if (!empty($chartData['full_dates'])) {
-            foreach ($chartData['full_dates'] as $index => $fullDate) {
-                if (isset($activitiesByDate[$fullDate])) {
-                    $taskCount = count($activitiesByDate[$fullDate]);
+            \Illuminate\Support\Facades\Log::info('ActivitiesByDate dates:', [
+                'dates' => array_keys($activitiesByDate)
+            ]);
+            \Illuminate\Support\Facades\Log::info('ChartData full dates:', [
+                'dates' => $chartData['full_dates']
+            ]);
+
+            // Для каждой активности ищем соответствующую дату в график и добавляем аннотацию
+            foreach ($activitiesByDate as $activityDate => $tasks) {
+                // Находим индекс даты в chartData['full_dates']
+                $index = array_search($activityDate, $chartData['full_dates']);
+                if ($index !== false) {
+                    $taskCount = count($tasks);
 
                     // Цвет по типу задачи
                     $colors = [
@@ -109,25 +119,36 @@ class ProjectsController extends Controller
                         'other' => '#00CFE8'
                     ];
 
-                    $borderColor = $taskCount > 1 ? '#FF4560' : ($colors[$activitiesByDate[$fullDate][0]['category']] ?? '#9F9F9F');
+                    $borderColor = $taskCount > 1 ? '#FF4560' : ($colors[$tasks[0]['category']] ?? '#9F9F9F');
 
                     $annotations[] = [
-                        'x' => $index,
+                        'x' => $chartData['categories'][$index], // Используем категорию вместо индекса
                         'borderColor' => $borderColor,
                         'borderWidth' => 3, // Жирная линия
-                        'tasks' => $activitiesByDate[$fullDate],
+                        'tasks' => $tasks,
                         'tooltipText' => '', // Мы используем подсказку для маркера
-                        'date' => $fullDate,
+                        'date' => $activityDate,
                         'visits' => $chartData['data'][$index] ?? 0
                     ];
+
+                    \Illuminate\Support\Facades\Log::info('Annotation added:', [
+                        'activityDate' => $activityDate,
+                        'index' => $index,
+                        'chartDate' => $chartData['full_dates'][$index]
+                    ]);
+                } else {
+                    \Illuminate\Support\Facades\Log::warning('Date not found in chart data:', [
+                        'activityDate' => $activityDate,
+                        'chartDates' => $chartData['full_dates']
+                    ]);
                 }
             }
         }
 
-        // Кодируем аннотации в JSON
-        $annotationsJson = json_encode($annotations);
+        // Кодируем аннотации в JSON с JSON_NUMERIC_CHECK
+        $annotationsJson = json_encode($annotations, JSON_NUMERIC_CHECK);
 
-        return view('projects.show', compact('project', 'pages', 'activities', 'keywords', 'chartData', 'yearlyChartData', 'activitiesByDate', 'annotations', 'annotationsJson'));
+        return view('projects.show', compact('project', 'pages', 'activities', 'keywords', 'chartData', 'yearlyChartData', 'activitiesByDate', 'annotations'));
     }
 
     /**
@@ -274,10 +295,14 @@ class ProjectsController extends Controller
             $dateValues = [];
 
             foreach ($response['data'] as $item) {
+                \Illuminate\Support\Facades\Log::info('Yandex Metrika date format:', [
+                    'rawDate' => $item['dimensions'][0]['name']
+                ]);
                 $date = \Carbon\Carbon::parse($item['dimensions'][0]['name']);
                 $dateStr = $date->isoFormat('DD.MM'); // Форматируем как "01.02"
                 $visitCount = (int)$item['metrics'][0];
-                $dateValues[$item['dimensions'][0]['name']] = ['date' => $dateStr, 'value' => $visitCount];
+                $dateKey = $date->format('Y-m-d'); // Используем единый формат даты
+                $dateValues[$dateKey] = ['date' => $dateStr, 'value' => $visitCount];
             }
 
             ksort($dateValues);
@@ -316,6 +341,12 @@ class ProjectsController extends Controller
                 $fullDates[] = $key;
             }
         }
+
+        \Illuminate\Support\Facades\Log::info('Formatted chart data:', [
+            'categories' => $categories,
+            'full_dates' => $fullDates,
+            'data' => $data
+        ]);
 
         return [
             'categories' => $categories,

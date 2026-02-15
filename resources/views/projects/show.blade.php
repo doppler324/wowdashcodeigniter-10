@@ -81,12 +81,25 @@ $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></scri
     document.addEventListener("DOMContentLoaded", function() {
         // График за месяц
         // Данные о задачах по датам
-        const activitiesByDate = ' . json_encode($activitiesByDate) . ';
-        const chartData = ' . json_encode($chartData) . ';
-        const annotationsData = ' . $annotationsJson . ';
+          const activitiesByDate = ' . json_encode($activitiesByDate) . ';
+          const chartData = ' . json_encode($chartData) . ';
+          const annotationsData = ' . $annotationsJson . ';
+          console.log("ActivitiesByDate JS:", activitiesByDate);
+          console.log("ChartData JS:", chartData);
+          console.log("AnnotationsData JS:", annotationsData);
+
+          // Function to hide custom tooltip
+          function hideCustomTooltip() {
+              const customTooltip = document.querySelector(".custom-chart-tooltip");
+              if (customTooltip) {
+                  customTooltip.remove();
+              }
+          }
 
         // Формируем аннотации для вертикальных линий
+        console.log("AnnotationsData for xaxis:", annotationsData);
         const xaxisAnnotations = annotationsData.map(annotation => {
+            console.log("Annotation date and index before xaxis:", annotation.date, annotation.x);
             const taskCount = annotation.tasks ? annotation.tasks.length : 0;
 
             // Цвет по типу задачи
@@ -120,6 +133,10 @@ $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></scri
                 }
             };
         });
+        console.log("xaxisAnnotations x values:", xaxisAnnotations.map(annotation => annotation.x));
+
+        console.log("Number of categories on chart:", chartData.categories.length);
+        console.log("Expected index for 2026-02-13:", chartData.full_dates.indexOf("2026-02-13"));
 
         var monthOptions = {
             series: [{
@@ -224,14 +241,24 @@ $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></scri
         };
 
         // Обработчик клика по задачам в тултипе
-        document.addEventListener("click", function(e) {
-            if (e.target.closest(".task-item")) {
-                const taskId = parseInt(e.target.closest(".task-item").dataset.taskId);
-                if (taskId) {
-                    showActivityDetails(taskId);
+            function hideCustomTooltip() {
+                const tooltip = document.querySelector(".custom-chart-tooltip");
+                if (tooltip) {
+                    tooltip.remove();
                 }
             }
-        });
+
+            document.addEventListener("click", function(e) {
+              if (e.target.closest(".task-item")) {
+                  const taskId = parseInt(e.target.closest(".task-item").dataset.taskId);
+                  if (taskId) {
+                      showActivityDetails(taskId);
+                  }
+              }
+          });
+        console.log("Number of data points:", chartData.data.length);
+        console.log("Number of annotations:", xaxisAnnotations.length);
+        console.log("xaxisAnnotations:", xaxisAnnotations);
         var monthChart = new ApexCharts(document.querySelector("#lineMonthChart"), monthOptions);
         monthChart.render();
 
