@@ -40,7 +40,8 @@ $subTitle = 'Настройки / Яндекс';
                                         </div>
                                     </div>
                                 @endif
-                                <form class="row g-3" method="POST" action="{{ route('settings.store') }}">
+                                <form class="row g-3" method="POST" action="{{ route('settings.update') }}">
+                                    @method('PUT')
                                     @csrf
                                     <div class="col-12 col-md-6">
                                         <label class="form-label" for="yandex_client_id">Client ID</label>
