@@ -14,7 +14,7 @@ class KeywordsController extends Controller
     /**
      * Display a listing of all keywords in the project.
      */
-    public function indexForProject(Project $project)
+    public function all(Project $project)
     {
         $this->authorize('view', $project);
 

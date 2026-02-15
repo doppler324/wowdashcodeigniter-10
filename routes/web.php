@@ -44,6 +44,9 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/pages/{page}/keywords/{keyword}', [KeywordsController::class, 'update'])->name('projects.pages.keywords.update');
         Route::delete('/pages/{page}/keywords/{keyword}', [KeywordsController::class, 'destroy'])->name('projects.pages.keywords.destroy');
 
+        // Keywords
+        Route::get('/keywords', [KeywordsController::class, 'all'])->name('projects.keywords.index');
+
         // Activities
         Route::get('/activities', [ActivitiesController::class, 'index'])->name('projects.activities.index');
         Route::get('/activities/create', [ActivitiesController::class, 'create'])->name('projects.activities.create');

@@ -53,6 +53,18 @@
                     <span>Страницы</span>
                 </a>
             </li>
+            <li>
+                <a href="{{ route('projects.keywords.index', $currentProject) }}">
+                    <iconify-icon icon="mdi:key-variant" class="menu-icon"></iconify-icon>
+                    <span>Ключевые запросы</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ route('projects.activities.index', $currentProject) }}">
+                    <iconify-icon icon="mdi:calendar-check" class="menu-icon"></iconify-icon>
+                    <span>Задачи</span>
+                </a>
+            </li>
             @endif
             @endif
             <li>

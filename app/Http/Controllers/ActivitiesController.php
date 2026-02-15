@@ -20,8 +20,6 @@ class ActivitiesController extends Controller
 
         if ($page) {
             $query->where('page_id', $page->id);
-        } else {
-            $query->whereNull('page_id');
         }
 
         $activities = $query->orderBy('event_date', 'desc')->get();
