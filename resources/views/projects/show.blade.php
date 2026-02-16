@@ -162,9 +162,8 @@ $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></scri
                             }
                         }
                     },
-                    mouseLeave: function(e, chartContext, config) {
-                        hideCustomTooltip();
-                    }
+                    // Удаляем обработчик mouseLeave, чтобы тултип не скрывался
+
                 }
             },
             colors: ["#487FFF"],
@@ -203,7 +202,9 @@ $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></scri
             tooltip: {
                 enabled: true,
                 custom: function({ series, seriesIndex, dataPointIndex, w }) {
-                    const annotation = annotationsData.find(a => a.x === dataPointIndex);
+                    // Ищем аннотацию по индексу даты в full_dates
+                    const currentDate = chartData.full_dates[dataPointIndex];
+                    const annotation = annotationsData.find(a => a.date === currentDate);
                     const visits = series[seriesIndex][dataPointIndex];
                     const date = chartData.categories[dataPointIndex];
 
@@ -223,7 +224,7 @@ $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></scri
                                 other: "#00CFE8"
                             };
                             const color = colors[task.category] || "#9F9F9F";
-                            html += `<div class="task-item" data-task-id="${task.id}" style="display: flex; align-items: center; padding: 4px 0; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background=\'#f5f5f5\'" onmouseout="this.style.background=\'transparent\'">`;
+                            html += `<div class="task-item" data-task-id="${task.id}" style="display: flex; align-items: center; padding: 4px 0; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='transparent'" onclick="showActivityDetails(${task.id})">`;
                             html += `<span style="width: 8px; height: 8px; border-radius: 50%; background: ${color}; margin-right: 8px; flex-shrink: 0;"></span>`;
                             html += `<span style="color: #333; font-size: 12px; text-decoration: underline; text-decoration-style: dotted;">${task.title}</span>`;
                             html += `</div>`;
@@ -248,14 +249,36 @@ $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></scri
                 }
             }
 
+            // Обработчик клика по задачам в тултипе (с делегацией для динамически созданных элементов)
+            // Обработчик клика по задачам в тултипе
             document.addEventListener("click", function(e) {
-              if (e.target.closest(".task-item")) {
-                  const taskId = parseInt(e.target.closest(".task-item").dataset.taskId);
-                  if (taskId) {
-                      showActivityDetails(taskId);
-                  }
-              }
-          });
+                const taskItem = e.target.closest(".task-item");
+                if (taskItem && document.querySelector(".custom-chart-tooltip")?.contains(taskItem)) {
+                    const taskId = parseInt(taskItem.dataset.taskId);
+                    if (taskId) {
+                        showActivityDetails(taskId);
+                    }
+                }
+            });
+
+            // Предотвращаем скрытие тултипа при наведении на него
+            document.addEventListener("mouseover", function(e) {
+                if (e.target.closest(".custom-chart-tooltip")) {
+                    window.tooltipHovered = true;
+                }
+            });
+
+            document.addEventListener("mouseout", function(e) {
+                if (e.target.closest(".custom-chart-tooltip")) {
+                    window.tooltipHovered = false;
+                    // Скрываем тултип с задержкой, чтобы пользователь мог выйти
+                    setTimeout(() => {
+                        if (!window.tooltipHovered) {
+                            hideCustomTooltip();
+                        }
+                    }, 500);
+                }
+            });
         console.log("Number of data points:", chartData.data.length);
         console.log("Number of annotations:", xaxisAnnotations.length);
         console.log("xaxisAnnotations:", xaxisAnnotations);
