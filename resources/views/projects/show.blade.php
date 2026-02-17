@@ -94,12 +94,84 @@ $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></scri
               if (customTooltip) {
                   customTooltip.remove();
               }
+              window.tooltipPinned = false;
+          }
+
+          // Переменная для отслеживания зафиксированного тултипа
+          window.tooltipPinned = false;
+          window.pinnedDataPointIndex = null;
+
+          // Функция для показа кастомного тултипа
+          function showCustomTooltip(e, annotation, chartData, isPinned) {
+              console.log("showCustomTooltip called", {e, annotation, chartData, isPinned});
+              if (isPinned === undefined) { isPinned = false; }
+
+              // Удаляем предыдущий тултип
+              hideCustomTooltip();
+
+              if (!annotation || !annotation.tasks || annotation.tasks.length === 0) {
+                  console.log("No tasks to show");
+                  return;
+              }
+
+              var date = chartData.categories[annotation.x];
+              var visits = chartData.data[annotation.x];
+
+              var html = \'<div class="custom-chart-tooltip" style="position: fixed; background: #fff; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); padding: 12px; min-width: 200px; max-width: 300px; z-index: 10000;">\';
+
+              // Кнопка закрытия для зафиксированного тултипа
+              if (isPinned) {
+                  html += \'<button onclick="hideCustomTooltip()" style="position: absolute; top: 8px; right: 8px; background: none; border: none; cursor: pointer; font-size: 18px; color: #999; padding: 0; line-height: 1;">&times;</button>\';
+              }
+
+              html += \'<div style="font-weight: 600; color: #333; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 8px; \' + (isPinned ? \'padding-right: 24px;\' : \'\') + \'">📅 \' + date + \'</div>\';
+              html += \'<div style="color: #487FFF; font-weight: 600; margin-bottom: 8px;">👥 \' + visits + \' посещений</div>\';
+
+              html += \'<div style="border-top: 1px solid #eee; padding-top: 8px; margin-top: 8px;">\';
+              html += \'<div style="font-weight: 600; color: #666; margin-bottom: 6px; font-size: 12px;">📋 Задачи (\' + annotation.tasks.length + \'):</div>\';
+
+              annotation.tasks.forEach(function(task, idx) {
+                  var colors = {
+                      content: "#FF9F29",
+                      links: "#28C76F",
+                      technical: "#FF4560",
+                      meta: "#7367F0",
+                      other: "#00CFE8"
+                  };
+                  var color = colors[task.category] || "#9F9F9F";
+                  html += \'<div class="task-item" data-task-id="\' + task.id + \'" style="display: flex; align-items: center; padding: 4px 0; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background=\\\'#f5f5f5\\\'" onmouseout="this.style.background=\\\'transparent\\\'" onclick="showActivityDetails(\' + task.id + \')">\';
+                  html += \'<span style="width: 8px; height: 8px; border-radius: 50%; background: \' + color + \'; margin-right: 8px; flex-shrink: 0;"></span>\';
+                  html += \'<span style="color: #333; font-size: 12px; text-decoration: underline; text-decoration-style: dotted;">\' + task.title + \'</span>\';
+                  html += \'</div>\';
+              });
+
+              html += \'</div>\';
+              html += \'</div>\';
+
+              // Создаем элемент тултипа
+              var tooltip = document.createElement(\'div\');
+              tooltip.innerHTML = html;
+              tooltip.firstElementChild.style.left = (e.clientX + 15) + \'px\';
+              tooltip.firstElementChild.style.top = (e.clientY + 15) + \'px\';
+
+              // Проверяем, чтобы тултип не выходил за границы экрана
+              document.body.appendChild(tooltip.firstElementChild);
+
+              var tooltipEl = document.querySelector(\'.custom-chart-tooltip\');
+              var rect = tooltipEl.getBoundingClientRect();
+
+              if (rect.right > window.innerWidth) {
+                  tooltipEl.style.left = (window.innerWidth - rect.width - 15) + \'px\';
+              }
+              if (rect.bottom > window.innerHeight) {
+                  tooltipEl.style.top = (window.innerHeight - rect.height - 15) + \'px\';
+              }
           }
 
         // Формируем аннотации для вертикальных линий
         console.log("AnnotationsData for xaxis:", annotationsData);
         const xaxisAnnotations = annotationsData.map(annotation => {
-            console.log("Annotation date and index before xaxis:", annotation.date, annotation.x);
+            console.log("Annotation date and index before xaxis:", annotation.date, annotation.x, typeof annotation.x);
             const taskCount = annotation.tasks ? annotation.tasks.length : 0;
 
             // Цвет по типу задачи
@@ -154,16 +226,37 @@ $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></scri
                 },
                 events: {
                     mouseMove: function(e, chartContext, config) {
+                        // Не показываем тултип при наведении, если он уже зафиксирован
+                        if (window.tooltipPinned) return;
+
                         // Показываем кастомный тултип при наведении на точку с задачами
                         if (config.dataPointIndex >= 0) {
-                            const annotation = annotationsData.find(a => a.x === config.dataPointIndex);
+                            const currentDate = chartData.full_dates[config.dataPointIndex];
+                            const annotation = annotationsData.find(function(a) { return a.date === currentDate; });
                             if (annotation && annotation.tasks) {
+                                annotation.x = config.dataPointIndex;
                                 showCustomTooltip(e, annotation, chartData);
                             }
                         }
                     },
-                    // Удаляем обработчик mouseLeave, чтобы тултип не скрывался
+                    click: function(e, chartContext, config) {
+                        console.log("Chart click event:", config);
+                        if (config.dataPointIndex >= 0) {
+                            // Удаляем предыдущий зафиксированный тултип
+                            hideCustomTooltip();
 
+                            const currentDate = chartData.full_dates[config.dataPointIndex];
+                            const annotation = annotationsData.find(function(a) { return a.date === currentDate; });
+                            console.log("Found annotation:", annotation);
+                            if (annotation && annotation.tasks && annotation.tasks.length > 0) {
+                                window.tooltipPinned = true;
+                                window.pinnedDataPointIndex = config.dataPointIndex;
+                                // Передаем правильный индекс для аннотации
+                                annotation.x = config.dataPointIndex;
+                                showCustomTooltip(e, annotation, chartData, true);
+                            }
+                        }
+                    }
                 }
             },
             colors: ["#487FFF"],
@@ -201,38 +294,43 @@ $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></scri
             },
             tooltip: {
                 enabled: true,
-                custom: function({ series, seriesIndex, dataPointIndex, w }) {
-                    // Ищем аннотацию по индексу даты в full_dates
-                    const currentDate = chartData.full_dates[dataPointIndex];
-                    const annotation = annotationsData.find(a => a.date === currentDate);
-                    const visits = series[seriesIndex][dataPointIndex];
-                    const date = chartData.categories[dataPointIndex];
+                custom: function(opts) {
+                    var series = opts.series;
+                    var seriesIndex = opts.seriesIndex;
+                    var dataPointIndex = opts.dataPointIndex;
+                    var w = opts.w;
 
-                    let html = `<div class="custom-chart-tooltip" style="background: #fff; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); padding: 12px; min-width: 200px; max-width: 300px;">`;
-                    html += `<div style="font-weight: 600; color: #333; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 8px;">📅 ${date}</div>`;
-                    html += `<div style="color: #487FFF; font-weight: 600; margin-bottom: 8px;">👥 ${visits} посещений</div>`;
+                    // Ищем аннотацию по индексу даты в full_dates
+                    var currentDate = chartData.full_dates[dataPointIndex];
+                    var annotation = annotationsData.find(function(a) { return a.date === currentDate; });
+                    var visits = series[seriesIndex][dataPointIndex];
+                    var date = chartData.categories[dataPointIndex];
+
+                    var html = \'<div class="custom-chart-tooltip" style="background: #fff; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); padding: 12px; min-width: 200px; max-width: 300px;">\';
+                    html += \'<div style="font-weight: 600; color: #333; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 8px;">📅 \' + date + \'</div>\';
+                    html += \'<div style="color: #487FFF; font-weight: 600; margin-bottom: 8px;">👥 \' + visits + \' посещений</div>\';
 
                     if (annotation && annotation.tasks && annotation.tasks.length > 0) {
-                        html += `<div style="border-top: 1px solid #eee; padding-top: 8px; margin-top: 8px;">`;
-                        html += `<div style="font-weight: 600; color: #666; margin-bottom: 6px; font-size: 12px;">📋 Задачи (${annotation.tasks.length}):</div>`;
-                        annotation.tasks.forEach((task, idx) => {
-                            const colors = {
+                        html += \'<div style="border-top: 1px solid #eee; padding-top: 8px; margin-top: 8px;">\';
+                        html += \'<div style="font-weight: 600; color: #666; margin-bottom: 6px; font-size: 12px;">📋 Задачи (\' + annotation.tasks.length + \'):</div>\';
+                        annotation.tasks.forEach(function(task, idx) {
+                            var colors = {
                                 content: "#FF9F29",
                                 links: "#28C76F",
                                 technical: "#FF4560",
                                 meta: "#7367F0",
                                 other: "#00CFE8"
                             };
-                            const color = colors[task.category] || "#9F9F9F";
-                            html += `<div class="task-item" data-task-id="${task.id}" style="display: flex; align-items: center; padding: 4px 0; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='transparent'" onclick="showActivityDetails(${task.id})">`;
-                            html += `<span style="width: 8px; height: 8px; border-radius: 50%; background: ${color}; margin-right: 8px; flex-shrink: 0;"></span>`;
-                            html += `<span style="color: #333; font-size: 12px; text-decoration: underline; text-decoration-style: dotted;">${task.title}</span>`;
-                            html += `</div>`;
+                            var color = colors[task.category] || "#9F9F9F";
+                            html += \'<div class="task-item" data-task-id="\' + task.id + \'" style="display: flex; align-items: center; padding: 4px 0; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background=\\\'#f5f5f5\\\'" onmouseout="this.style.background=\\\'transparent\\\'" onclick="showActivityDetails(\' + task.id + \')">\';
+                            html += \'<span style="width: 8px; height: 8px; border-radius: 50%; background: \' + color + \'; margin-right: 8px; flex-shrink: 0;"></span>\';
+                            html += \'<span style="color: #333; font-size: 12px; text-decoration: underline; text-decoration-style: dotted;">\' + task.title + \'</span>\';
+                            html += \'</div>\';
                         });
-                        html += `</div>`;
+                        html += \'</div>\';
                     }
 
-                    html += `</div>`;
+                    html += \'</div>\';
                     return html;
                 }
             },
@@ -271,14 +369,24 @@ $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></scri
             document.addEventListener("mouseout", function(e) {
                 if (e.target.closest(".custom-chart-tooltip")) {
                     window.tooltipHovered = false;
-                    // Скрываем тултип с задержкой, чтобы пользователь мог выйти
-                    setTimeout(() => {
-                        if (!window.tooltipHovered) {
-                            hideCustomTooltip();
-                        }
-                    }, 500);
+                    // Скрываем тултип с задержкой только если он не зафиксирован
+                    if (!window.tooltipPinned) {
+                        setTimeout(() => {
+                            if (!window.tooltipHovered) {
+                                hideCustomTooltip();
+                            }
+                        }, 500);
+                    }
                 }
             });
+
+            // Клик вне тултипа снимает фиксацию
+            document.addEventListener("click", function(e) {
+                if (window.tooltipPinned && !e.target.closest(".custom-chart-tooltip") && !e.target.closest(".apexcharts-canvas")) {
+                    hideCustomTooltip();
+                }
+            });
+
         console.log("Number of data points:", chartData.data.length);
         console.log("Number of annotations:", xaxisAnnotations.length);
         console.log("xaxisAnnotations:", xaxisAnnotations);
@@ -561,12 +669,10 @@ function generateSettingsMenu() {
         const label = document.createElement("label");
         label.className = "form-check-label line-height-1 fw-medium text-secondary-light";
         label.htmlFor = "setting-" + key;
-        label.innerHTML = `
-            <span class="text-black hover-bg-transparent hover-text-primary d-flex align-items-center gap-3">
-                <span class="w-36-px flex-shrink-0"></span>
-                <span class="text-md fw-semibold mb-0">${col.title}</span>
-            </span>
-        `;
+        label.innerHTML = \'<span class="text-black hover-bg-transparent hover-text-primary d-flex align-items-center gap-3">\' +
+            \'<span class="w-36-px flex-shrink-0"></span>\' +
+            \'<span class="text-md fw-semibold mb-0">\' + col.title + \'</span>\' +
+            \'</span>\';
         if (col.alwaysVisible) {
             label.style.opacity = "0.6";
         }
