@@ -72,6 +72,30 @@ $style = '
     border-color: #007bff;
     box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
 }
+/* Модальное окно с деталями активности для светлой темы */
+[data-theme="light"] #activityDetailModal .modal-body {
+    color: #333;
+}
+[data-theme="light"] #activityDetailModal .modal-body .text-primary-light {
+    color: #333 !important;
+}
+[data-theme="light"] #activityDetailModal .modal-body #activityDetailDescription {
+    color: #333 !important;
+}
+/* Модальное окно с деталями активности для темной темы */
+[data-theme="dark"] #activityDetailModal .modal-body {
+    color: #e5e7eb;
+}
+[data-theme="dark"] #activityDetailModal .modal-body .text-primary-light {
+    color: #e5e7eb !important;
+}
+[data-theme="dark"] #activityDetailModal .modal-body #activityDetailDescription {
+    color: #e5e7eb !important;
+}
+/* Фон для описания задачи в темной теме */
+[data-theme="dark"] #activityDetailModal .modal-body #activityDetailDescription {
+    background-color: #374151 !important;
+}
 </style>
 ';
 $annotationsJson = json_encode($annotations);
@@ -90,11 +114,14 @@ $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></scri
 
           // Function to hide custom tooltip
           function hideCustomTooltip() {
-              const customTooltip = document.querySelector(".custom-chart-tooltip");
-              if (customTooltip) {
-                  customTooltip.remove();
-              }
+              console.log("hideCustomTooltip called");
+              const customTooltips = document.querySelectorAll(".custom-chart-tooltip");
+              console.log("Found tooltips to remove:", customTooltips.length);
+              customTooltips.forEach(function(tooltip) {
+                  tooltip.remove();
+              });
               window.tooltipPinned = false;
+              console.log("window.tooltipPinned after hide:", window.tooltipPinned);
           }
 
           // Переменная для отслеживания зафиксированного тултипа
@@ -103,8 +130,14 @@ $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></scri
 
           // Функция для показа кастомного тултипа
           function showCustomTooltip(e, annotation, chartData, isPinned) {
-              console.log("showCustomTooltip called", {e, annotation, chartData, isPinned});
+              console.log("showCustomTooltip called", {e, annotation, chartData, isPinned, isPinnedGlobal: window.tooltipPinned});
               if (isPinned === undefined) { isPinned = false; }
+
+              // Если уже есть зафиксированный тултип и мы не пытаемся показать новый зафиксированный, выходим
+              if (window.tooltipPinned && !isPinned) {
+                  console.log("Already have a pinned tooltip, ignoring showCustomTooltip for unpinned");
+                  return;
+              }
 
               // Удаляем предыдущий тултип
               hideCustomTooltip();
@@ -227,7 +260,10 @@ $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></scri
                 events: {
                     mouseMove: function(e, chartContext, config) {
                         // Не показываем тултип при наведении, если он уже зафиксирован
-                        if (window.tooltipPinned) return;
+                        if (window.tooltipPinned) {
+                            console.log("Tooltip is pinned, ignoring mouseMove");
+                            return;
+                        }
 
                         // Показываем кастомный тултип при наведении на точку с задачами
                         if (config.dataPointIndex >= 0) {
@@ -242,18 +278,21 @@ $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></scri
                     click: function(e, chartContext, config) {
                         console.log("Chart click event:", config);
                         if (config.dataPointIndex >= 0) {
-                            // Удаляем предыдущий зафиксированный тултип
-                            hideCustomTooltip();
-
                             const currentDate = chartData.full_dates[config.dataPointIndex];
                             const annotation = annotationsData.find(function(a) { return a.date === currentDate; });
                             console.log("Found annotation:", annotation);
                             if (annotation && annotation.tasks && annotation.tasks.length > 0) {
+                                // Удаляем предыдущий зафиксированный тултип
+                                if (window.tooltipPinned) {
+                                    hideCustomTooltip();
+                                }
+                                // Устанавливаем флаг фиксации ДО показа тултипа, чтобы tooltip.custom уже видал, что тултип зафиксирован
                                 window.tooltipPinned = true;
                                 window.pinnedDataPointIndex = config.dataPointIndex;
                                 // Передаем правильный индекс для аннотации
                                 annotation.x = config.dataPointIndex;
                                 showCustomTooltip(e, annotation, chartData, true);
+                                console.log("Tooltip is now pinned:", window.tooltipPinned);
                             }
                         }
                     }
@@ -295,6 +334,12 @@ $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></scri
             tooltip: {
                 enabled: true,
                 custom: function(opts) {
+                    // Если есть зафиксированный тултип, не показываем стандартный
+                    if (window.tooltipPinned) {
+                        console.log("Tooltip is pinned, returning empty string from custom tooltip");
+                        return \'\';
+                    }
+
                     var series = opts.series;
                     var seriesIndex = opts.seriesIndex;
                     var dataPointIndex = opts.dataPointIndex;
@@ -340,12 +385,7 @@ $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></scri
         };
 
         // Обработчик клика по задачам в тултипе
-            function hideCustomTooltip() {
-                const tooltip = document.querySelector(".custom-chart-tooltip");
-                if (tooltip) {
-                    tooltip.remove();
-                }
-            }
+
 
             // Обработчик клика по задачам в тултипе (с делегацией для динамически созданных элементов)
             // Обработчик клика по задачам в тултипе
@@ -742,6 +782,8 @@ document.addEventListener("DOMContentLoaded", function() {
         document.getElementById('activityDetailCategory').textContent = categoryLabel;
         document.getElementById('activityDetailCategory').className = `badge ${categoryClass}`;
         document.getElementById('activityDetailDescription').innerHTML = activity.description ? activity.description.replace(/\n/g, '<br>') : '<span class="text-secondary">Нет описания</span>';
+        // Убеждаемся, что текст описания имеет контрастный цвет
+        document.getElementById('activityDetailDescription').style.color = '#333';
         document.getElementById('activityDetailEditBtn').href = `/projects/{{ $project->id }}/activities/${activity.id}/edit`;
 
         // Показываем модальное окно
