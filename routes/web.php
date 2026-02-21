@@ -64,6 +64,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/settings/{setting}/edit', [App\Http\Controllers\ProjectSettingController::class, 'edit'])->name('projects.settings.edit');
         Route::put('/settings/{setting}', [App\Http\Controllers\ProjectSettingController::class, 'update'])->name('projects.settings.update');
         Route::delete('/settings/{setting}', [App\Http\Controllers\ProjectSettingController::class, 'destroy'])->name('projects.settings.destroy');
+
+        // Chart data
+        Route::get('/chart-data', [ProjectsController::class, 'getChartDataByDateRange'])->name('projects.chart-data');
     });
 
     // Settings

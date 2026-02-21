@@ -491,14 +491,227 @@ $script = '<script src="' . asset('assets/js/lineChartPageChart.js') . '"></scri
     });
 </script>
 <script>
-    // Flat pickr or date picker js
-    function getDatePicker(receiveID) {
-        flatpickr(receiveID, {
-            enableTime: true,
-            dateFormat: "Y-m-d H:i",
-        });
+    // Date pickers for chart
+    flatpickr("#startdate", {
+        enableTime: false,
+        dateFormat: "Y-m-d"
+    });
+
+    flatpickr("#enddate", {
+        enableTime: false,
+        dateFormat: "Y-m-d"
+    });
+
+    // Function to update chart data
+    function updateChartData() {
+        var startDate = document.getElementById(\'startdate\').value;
+        var endDate = document.getElementById(\'enddate\').value;
+
+        if (!startDate || !endDate) {
+            alert(\'Please select both dates\');
+            return;
+        }
+
+        // Show loading
+        var chartContainer = document.querySelector(\'#lineMonthChart\');
+        chartContainer.innerHTML = \'<div style="display: flex; align-items: center; justify-content: center; height: 200px;">Loading...</div>\';
+
+        fetch(\'' . route('projects.chart-data', $project) . '\' + \'?date1=\' + startDate + \'&date2=\' + endDate)
+            .then(function(response) {
+                return response.json();
+            })
+            .then(function(data) {
+                console.log(\'Chart data received:\', data);
+
+                // Update chartData and annotationsData variables
+                chartData = data.chartData;
+                annotationsData = data.annotations;
+                activitiesByDate = data.activitiesByDate;
+
+                // Destroy old chart
+                if (typeof monthChart !== \'undefined\') {
+                    monthChart.destroy();
+                }
+
+                // Формируем аннотации для вертикальных линий
+                const xaxisAnnotations = annotationsData.map(annotation => {
+                    const taskCount = annotation.tasks ? annotation.tasks.length : 0;
+
+                    const colors = {
+                        content: "#FF9F29",
+                        links: "#28C76F",
+                        technical: "#FF4560",
+                        meta: "#7367F0",
+                        other: "#00CFE8"
+                    };
+
+                    const borderColor = taskCount > 1 ? "#FF4560" : (colors[annotation.tasks[0].category] || "#9F9F9F");
+
+                    return {
+                        x: annotation.x,
+                        borderColor: borderColor,
+                        borderWidth: 2,
+                        strokeDashArray: 0,
+                        opacity: 0.8,
+                        label: {
+                            borderColor: borderColor,
+                            style: {
+                                color: "#fff",
+                                background: borderColor,
+                                fontSize: "10px",
+                                fontWeight: "bold",
+                                padding: { left: 5, right: 5, top: 2, bottom: 2 }
+                            },
+                            text: taskCount > 1 ? taskCount + " задач" : "1 задача",
+                            position: "top"
+                        }
+                    };
+                });
+
+                // Create new chart options
+                const newOptions = {
+                    series: [{
+                        name: "Посещения",
+                        data: chartData.data
+                    }],
+                    chart: {
+                        height: 264,
+                        type: "line",
+                        zoom: {
+                            enabled: false
+                        },
+                        toolbar: {
+                            show: false
+                        },
+                        events: {
+                            mouseMove: function(e, chartContext, config) {
+                                if (window.tooltipPinned) {
+                                    return;
+                                }
+
+                                if (config.dataPointIndex >= 0) {
+                                    const currentDate = chartData.full_dates[config.dataPointIndex];
+                                    const annotation = annotationsData.find(function(a) { return a.date === currentDate; });
+                                    if (annotation && annotation.tasks) {
+                                        annotation.x = config.dataPointIndex;
+                                        showCustomTooltip(e, annotation, chartData);
+                                    }
+                                }
+                            },
+                            click: function(e, chartContext, config) {
+                                console.log("Chart click event:", config);
+                                if (config.dataPointIndex >= 0) {
+                                    const currentDate = chartData.full_dates[config.dataPointIndex];
+                                    const annotation = annotationsData.find(function(a) { return a.date === currentDate; });
+                                    console.log("Found annotation:", annotation);
+                                    if (annotation && annotation.tasks && annotation.tasks.length > 0) {
+                                        if (window.tooltipPinned) {
+                                            hideCustomTooltip();
+                                        }
+                                        window.tooltipPinned = true;
+                                        window.pinnedDataPointIndex = config.dataPointIndex;
+                                        annotation.x = config.dataPointIndex;
+                                        showCustomTooltip(e, annotation, chartData, true);
+                                        console.log("Tooltip is now pinned:", window.tooltipPinned);
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    colors: ["#487FFF"],
+                    dataLabels: {
+                        enabled: true
+                    },
+                    xaxis: {
+                        categories: chartData.categories,
+                        tickAmount: chartData.categories.length,
+                        labels: {
+                            rotate: 0,
+                            style: {
+                                fontSize: "12px"
+                            }
+                        }
+                    },
+                    yaxis: {
+                        title: {
+                            text: "Посещения"
+                        },
+                        min: 0
+                    },
+                    stroke: {
+                        width: 3
+                    },
+                    markers: {
+                        size: 4,
+                        colors: ["#487FFF"],
+                        hover: {
+                            size: 6
+                        }
+                    },
+                    grid: {
+                        strokeDashArray: 4
+                    },
+                    tooltip: {
+                        enabled: true,
+                        custom: function(opts) {
+                            if (window.tooltipPinned) {
+                                return \'\';
+                            }
+
+                            var series = opts.series;
+                            var seriesIndex = opts.seriesIndex;
+                            var dataPointIndex = opts.dataPointIndex;
+
+                            var currentDate = chartData.full_dates[dataPointIndex];
+                            var annotation = annotationsData.find(function(a) { return a.date === currentDate; });
+                            var visits = series[seriesIndex][dataPointIndex];
+                            var date = chartData.categories[dataPointIndex];
+
+                            var html = \'<div class="custom-chart-tooltip" style="background: #fff; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); padding: 12px; min-width: 200px; max-width: 300px;">\';
+                            html += \'<div style="font-weight: 600; color: #333; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 8px;">📅 \' + date + \'</div>\';
+                            html += \'<div style="color: #487FFF; font-weight: 600; margin-bottom: 8px;">👥 \' + visits + \' посещений</div>\';
+
+                            if (annotation && annotation.tasks && annotation.tasks.length > 0) {
+                                html += \'<div style="border-top: 1px solid #eee; padding-top: 8px; margin-top: 8px;">\';
+                                html += \'<div style="font-weight: 600; color: #666; margin-bottom: 6px; font-size: 12px;">📋 Задачи (\' + annotation.tasks.length + \'):</div>\';
+                                annotation.tasks.forEach(function(task, idx) {
+                                    var colors = {
+                                        content: "#FF9F29",
+                                        links: "#28C76F",
+                                        technical: "#FF4560",
+                                        meta: "#7367F0",
+                                        other: "#00CFE8"
+                                    };
+                                    var color = colors[task.category] || "#9F9F9F";
+                                    html += \'<div class="task-item" data-task-id="\' + task.id + \'" style="display: flex; align-items: center; padding: 4px 0; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background=\\\'#f5f5f5\\\'" onmouseout="this.style.background=\\\'transparent\\\'" onclick="showActivityDetails(\' + task.id + \')">\';
+                                    html += \'<span style="width: 8px; height: 8px; border-radius: 50%; background: \' + color + \'; margin-right: 8px; flex-shrink: 0;"></span>\';
+                                    html += \'<span style="color: #333; font-size: 12px; text-decoration: underline; text-decoration-style: dotted;">\' + task.title + \'</span>\';
+                                    html += \'</div>\';
+                                });
+                                html += \'</div>\';
+                            }
+
+                            html += \'</div>\';
+                            return html;
+                        }
+                    },
+                    annotations: {
+                        xaxis: xaxisAnnotations
+                    }
+                };
+
+                // Render new chart
+                monthChart = new ApexCharts(document.querySelector("#lineMonthChart"), newOptions);
+                monthChart.render();
+
+                console.log("Chart updated successfully");
+            })
+            .catch(error => {
+                console.error(\'Error updating chart:\', error);
+                const chartContainer = document.querySelector(\'#lineMonthChart\');
+                chartContainer.innerHTML = \'<div style="display: flex; align-items: center; justify-content: center; height: 200px; color: red;">Ошибка при загрузке данных</div>\';
+            });
     }
-    getDatePicker("#startDate");
 </script>
 <script>
     // Инициализация DataTable для ключевых слов
@@ -1206,7 +1419,16 @@ document.addEventListener("DOMContentLoaded", function() {
     <!-- Линейный график за месяц -->
     <div class="card h-100 p-0 radius-12 mt-32">
         <div class="card-header border-bottom bg-base py-16 px-24">
-            <h6 class="text-lg fw-semibold mb-0">Посещения за месяц</h6>
+            <div class="d-flex flex-wrap align-items-center gap-3">
+                <h6 class="text-lg fw-semibold mb-0">Посещения за период</h6>
+                <div class="d-flex gap-2">
+                    <input type="text" id="startdate" class="form-control radius-8 bg-base" placeholder="Начальная дата" style="width: 150px;">
+                    <input type="text" id="enddate" class="form-control radius-8 bg-base" placeholder="Конечная дата" style="width: 150px;">
+                    <button type="button" class="btn btn-primary text-sm px-12 py-11 radius-8" onclick="updateChartData()">
+                        Обновить
+                    </button>
+                </div>
+            </div>
         </div>
         <div class="card-body p-24">
             <div id="lineMonthChart"></div>

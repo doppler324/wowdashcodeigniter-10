@@ -244,9 +244,9 @@ class ProjectsController extends Controller
     }
 
     /**
-     * Get chart data from Yandex Metrika API for last month.
+     * Get chart data from Yandex Metrika API for specified date range.
      */
-    private function getChartData($project)
+    private function getChartData($project, $date1 = null, $date2 = null)
     {
         try {
             $settings = $project->setting ?? Setting::where('user_id', auth()->id())->first();
@@ -255,13 +255,15 @@ class ProjectsController extends Controller
 
             if (!$settings || empty($settings->yandex_metrika_token) || empty($settings->yandex_metrika_counter)) {
                 \Illuminate\Support\Facades\Log::info('Yandex Metrika settings not found, returning mock data');
-                return $this->getMockChartData();
+                return $this->getMockChartData($date1, $date2);
             }
 
             $yandexMetrikaService = new YandexMetrikaService($settings->yandex_metrika_token);
 
-            $date1 = now()->subMonth()->format('Y-m-d');
-            $date2 = now()->format('Y-m-d');
+            if (!$date1 || !$date2) {
+                $date1 = now()->subMonth()->format('Y-m-d');
+                $date2 = now()->format('Y-m-d');
+            }
 
             $params = [
                 'ids' => $settings->yandex_metrika_counter,
@@ -369,19 +371,27 @@ class ProjectsController extends Controller
     /**
      * Get mock monthly chart data.
      */
-    private function getMockChartData()
+    private function getMockChartData($date1 = null, $date2 = null)
     {
-        // Генерируем данные за последние 30 дней
+        // Генерируем данные за указанный диапазон или за последние 30 дней по умолчанию
         $categories = [];
         $data = [];
         $fullDates = [];
 
-        $startDate = \Carbon\Carbon::now()->subDays(29);
-        for ($i = 0; $i < 30; $i++) {
-            $currentDate = $startDate->copy()->addDays($i);
+        if (!$date1 || !$date2) {
+            $startDate = \Carbon\Carbon::now()->subDays(29);
+            $endDate = \Carbon\Carbon::now();
+        } else {
+            $startDate = \Carbon\Carbon::parse($date1);
+            $endDate = \Carbon\Carbon::parse($date2);
+        }
+
+        $currentDate = $startDate->copy();
+        while ($currentDate <= $endDate) {
             $categories[] = $currentDate->isoFormat('DD.MM');
             $data[] = rand(10, 100);
             $fullDates[] = $currentDate->format('Y-m-d');
+            $currentDate->addDay();
         }
 
         return [
@@ -389,6 +399,71 @@ class ProjectsController extends Controller
             'data' => $data,
             'full_dates' => $fullDates
         ];
+    }
+
+    /**
+     * Get chart data for specified date range (API endpoint).
+     */
+    public function getChartDataByDateRange(Project $project, Request $request)
+    {
+        $this->authorize('view', $project);
+
+        $date1 = $request->input('date1');
+        $date2 = $request->input('date2');
+
+        $chartData = $this->getChartData($project, $date1, $date2);
+
+        // Группируем активности по датам для графика
+        $activities = $project->activities()->orderBy('event_date', 'desc')->get();
+        $activitiesByDate = $activities->groupBy(function($item) {
+            return $item->event_date->format('Y-m-d');
+        })->map(function($group) {
+            return $group->map(function($activity) {
+                return [
+                    'id' => $activity->id,
+                    'title' => $activity->title,
+                    'category' => $activity->category,
+                    'formatted_date' => $activity->formatted_date
+                ];
+            })->toArray();
+        })->toArray();
+
+        // Формируем аннотации для вертикальных линий
+        $annotations = [];
+        if (!empty($chartData['full_dates'])) {
+            foreach ($activitiesByDate as $activityDate => $tasks) {
+                $index = array_search($activityDate, $chartData['full_dates']);
+                if ($index !== false) {
+                    $taskCount = count($tasks);
+
+                    $colors = [
+                        'content' => '#FF9F29',
+                        'links' => '#28C76F',
+                        'technical' => '#FF4560',
+                        'meta' => '#7367F0',
+                        'other' => '#00CFE8'
+                    ];
+
+                    $borderColor = $taskCount > 1 ? '#FF4560' : ($colors[$tasks[0]['category']] ?? '#9F9F9F');
+
+                    $annotations[] = [
+                        'x' => $chartData['categories'][$index],
+                        'borderColor' => $borderColor,
+                        'borderWidth' => 3,
+                        'tasks' => $tasks,
+                        'tooltipText' => '',
+                        'date' => $activityDate,
+                        'visits' => $chartData['data'][$index] ?? 0
+                    ];
+                }
+            }
+        }
+
+        return response()->json([
+            'chartData' => $chartData,
+            'annotations' => $annotations,
+            'activitiesByDate' => $activitiesByDate
+        ]);
     }
 
     /**
