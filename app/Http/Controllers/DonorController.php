@@ -18,11 +18,13 @@ class DonorController extends Controller
     {
         $this->authorize('view', $project);
 
-        $donors = Donor::whereHas('page', function ($query) use ($project) {
+        $donors = Donor::whereHas('pages', function ($query) use ($project) {
             $query->where('project_id', $project->id);
-        })->with('page')->get();
+        })->with('pages')->get();
 
-        return view('donors.index', compact('project', 'donors'));
+        $pages = $project->pages()->get();
+
+        return view('donors.index', compact('project', 'donors', 'pages'));
     }
 
     // Display all donors for a specific page
@@ -50,22 +52,27 @@ class DonorController extends Controller
         $validated = $request->validate([
             'link' => 'required|url|max:2048',
             'type' => 'required|in:статья,форум,каталог',
-            'authority' => 'nullable|integer|min:0|max:100',
-            'anchor' => 'nullable|string|max:255',
             'link_type' => 'required|in:dofollow,nofollow',
             'added_at' => 'nullable|date',
             'is_image_link' => 'boolean',
             'status' => 'required|in:active,inactive,deleted',
             'is_redirect' => 'boolean',
-            'duration' => 'nullable|string|max:255',
             'check_date' => 'nullable|date',
-            'placement_type' => 'nullable|in:статья,обзор,контекстная',
             'status_code' => 'nullable|integer|min:100|max:599',
             'price' => 'nullable|numeric|min:0',
             'marketplace' => 'nullable|in:Miralinks,Collaborator,Gogetlinks,прямой аутрич',
+            'anchor_links' => 'required|array',
+            'anchor_links.*.anchor' => 'nullable|string|max:255',
+            'anchor_links.*.page_id' => 'required|exists:pages,id',
         ]);
 
-        $page->donors()->create($validated);
+        $donor = Donor::create($validated);
+
+        foreach ($validated['anchor_links'] as $anchorLink) {
+            $donor->pages()->attach($anchorLink['page_id'], [
+                'anchor' => $anchorLink['anchor']
+            ]);
+        }
 
         return redirect()->route('projects.pages.show', [$project, $page])
             ->with('success', 'Донор успешно добавлен.');
@@ -95,22 +102,29 @@ class DonorController extends Controller
         $validated = $request->validate([
             'link' => 'required|url|max:2048',
             'type' => 'required|in:статья,форум,каталог',
-            'authority' => 'nullable|integer|min:0|max:100',
-            'anchor' => 'nullable|string|max:255',
             'link_type' => 'required|in:dofollow,nofollow',
             'added_at' => 'nullable|date',
             'is_image_link' => 'boolean',
             'status' => 'required|in:active,inactive,deleted',
             'is_redirect' => 'boolean',
-            'duration' => 'nullable|string|max:255',
             'check_date' => 'nullable|date',
-            'placement_type' => 'nullable|in:статья,обзор,контекстная',
             'status_code' => 'nullable|integer|min:100|max:599',
             'price' => 'nullable|numeric|min:0',
             'marketplace' => 'nullable|in:Miralinks,Collaborator,Gogetlinks,прямой аутрич',
+            'anchor_links' => 'required|array',
+            'anchor_links.*.anchor' => 'nullable|string|max:255',
+            'anchor_links.*.page_id' => 'required|exists:pages,id',
         ]);
 
         $donor->update($validated);
+
+        // Update pivot table
+        $donor->pages()->detach();
+        foreach ($validated['anchor_links'] as $anchorLink) {
+            $donor->pages()->attach($anchorLink['page_id'], [
+                'anchor' => $anchorLink['anchor']
+            ]);
+        }
 
         return redirect()->route('projects.pages.show', [$project, $page])
             ->with('success', 'Донор успешно обновлен.');

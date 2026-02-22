@@ -34,8 +34,8 @@
                     }
                 } elseif (request()->route('donor')) {
                     $donor = \App\Models\Donor::find(request()->route('donor'));
-                    if ($donor && $donor->page) {
-                        $currentProject = $donor->page->project;
+                    if ($donor && $donor->pages->first()) {
+                        $currentProject = $donor->pages->first()->project;
                     }
                 } elseif (request()->route('activity')) {
                     $activity = \App\Models\Activity::find(request()->route('activity'));
@@ -63,6 +63,12 @@
                 <a href="{{ route('projects.activities.index', $currentProject) }}">
                     <iconify-icon icon="mdi:calendar-check" class="menu-icon"></iconify-icon>
                     <span>Задачи</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ route('projects.donors.index', $currentProject) }}">
+                    <iconify-icon icon="mdi:link-variant" class="menu-icon"></iconify-icon>
+                    <span>Доноры</span>
                 </a>
             </li>
             <li>

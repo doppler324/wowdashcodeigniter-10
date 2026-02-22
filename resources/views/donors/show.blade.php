@@ -24,14 +24,6 @@ $subTitle = 'Просмотр донора для страницы: ' . $page->u
                         {{ $donor->type }}
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Авторитетность:</label>
-                        {{ $donor->authority }}
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Анкор:</label>
-                        {{ $donor->anchor ?? '-' }}
-                    </div>
-                    <div class="mb-3">
                         <label class="form-label">Тип ссылки:</label>
                         <span class="badge bg-{{ $donor->link_type === 'dofollow' ? 'success' : 'warning' }}">
                             {{ $donor->link_type }}
@@ -41,8 +33,6 @@ $subTitle = 'Просмотр донора для страницы: ' . $page->u
                         <label class="form-label">Дата добавления:</label>
                         {{ $donor->added_at ? $donor->added_at->format('d.m.Y') : '-' }}
                     </div>
-                </div>
-                <div class="col-md-6">
                     <div class="mb-3">
                         <label class="form-label">Является ли ссылка картинкой:</label>
                         {{ $donor->is_image_link ? 'Да' : 'Нет' }}
@@ -53,21 +43,15 @@ $subTitle = 'Просмотр донора для страницы: ' . $page->u
                             {{ $donor->status }}
                         </span>
                     </div>
+                </div>
+                <div class="col-md-6">
                     <div class="mb-3">
                         <label class="form-label">Ведет ли ссылка через редирект:</label>
                         {{ $donor->is_redirect ? 'Да' : 'Нет' }}
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Срок действия ссылки:</label>
-                        {{ $donor->duration ?? '-' }}
-                    </div>
-                    <div class="mb-3">
                         <label class="form-label">Дата проверки ссылки:</label>
                         {{ $donor->check_date ? $donor->check_date->format('d.m.Y') : '-' }}
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Как размещена ссылка:</label>
-                        {{ $donor->placement_type ?? '-' }}
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Код ответа страницы-донора:</label>
@@ -80,6 +64,31 @@ $subTitle = 'Просмотр донора для страницы: ' . $page->u
                     <div class="mb-3">
                         <label class="form-label">Площадка закупки:</label>
                         {{ $donor->marketplace ?? '-' }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Anchor Links -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <h6>Ссылки на страницы сайта:</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Анкор</th>
+                                    <th>Страница</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($donor->pages as $p)
+                                    <tr>
+                                        <td>{{ $p->pivot->anchor ?? '-' }}</td>
+                                        <td>{{ $p->url }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>

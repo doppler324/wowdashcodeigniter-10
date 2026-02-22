@@ -13,19 +13,14 @@ class Donor extends Model
      * @var array
      */
     protected $fillable = [
-        'page_id',
         'link',
         'type',
-        'authority',
-        'anchor',
         'link_type',
         'added_at',
         'is_image_link',
         'status',
         'is_redirect',
-        'duration',
         'check_date',
-        'placement_type',
         'status_code',
         'price',
         'marketplace',
@@ -39,7 +34,6 @@ class Donor extends Model
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
-        'authority' => 'integer',
         'added_at' => 'date',
         'is_image_link' => 'boolean',
         'is_redirect' => 'boolean',
@@ -49,18 +43,20 @@ class Donor extends Model
     ];
 
     /**
-     * Get the page that the donor belongs to.
+     * Get the pages that the donor links to.
      */
-    public function page(): BelongsTo
+    public function pages()
     {
-        return $this->belongsTo(Page::class);
+        return $this->belongsToMany(Page::class, 'donor_page_anchor')
+            ->withPivot('anchor')
+            ->withTimestamps();
     }
 
     /**
-     * Get the project that the donor belongs to (through page).
+     * Get the project that the donor belongs to (through pages).
      */
     public function project()
     {
-        return $this->page->project;
+        return $this->pages->first()->project;
     }
 }

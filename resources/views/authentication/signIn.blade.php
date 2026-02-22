@@ -50,7 +50,7 @@
         <div class="auth-right py-32 px-24 d-flex flex-column justify-content-center">
             <div class="max-w-464-px mx-auto w-100">
                 <div>
-                    <a href="{{  route('index') }}" class="mb-40 max-w-290-px">
+                    <a href="{{  route('projects.index') }}" class="mb-40 max-w-290-px">
                         <img src="{{ asset('assets/images/logo.png') }}" alt="">
                     </a>
                     <h4 class="mb-12">Sign In to your Account</h4>
@@ -86,7 +86,7 @@
                                 <input class="form-check-input border border-neutral-300" type="checkbox" name="remember" id="remember" {{ old('remember') ? 'checked' : '' }}>
                                 <label class="form-check-label" for="remember">Remember me </label>
                             </div>
-                            <a href="{{ route('forgotPassword') }}" class="text-primary-600 fw-medium">Forgot Password?</a>
+
                         </div>
                     </div>
 

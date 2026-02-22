@@ -35,8 +35,13 @@ $script = '<script>
             <h5 class="card-title mb-0">Все доноры проекта: {{ $project->name }}</h5>
         </div>
          <div class="d-flex align-items-center flex-wrap gap-3">
-            <a href="{{ route('projects.show', $project) }}" class="btn btn-secondary">Назад к проекту</a>
-        </div>
+                <a href="{{ route('projects.show', $project) }}" class="btn btn-secondary">Назад к проекту</a>
+                @if($pages->count() > 0)
+                    <a href="{{ route('projects.pages.donors.create', [$project, $pages->first()]) }}" class="btn btn-primary">Добавить донора</a>
+                @else
+                    <a href="{{ route('projects.pages.create', $project) }}" class="btn btn-primary">Добавить страницу</a>
+                @endif
+            </div>
     </div>
     <div class="card-body p-24">
         @if(session('success'))
@@ -49,7 +54,7 @@ $script = '<script>
                 <thead>
                     <tr>
                         <th scope="col">ID</th>
-                        <th scope="col">Страница</th>
+                        <th scope="col">Страницы</th>
                         <th scope="col">Ссылка</th>
                         <th scope="col">Тип</th>
                         <th scope="col">Площадка</th>
@@ -63,9 +68,11 @@ $script = '<script>
                         <tr>
                             <td>{{ $donor->id }}</td>
                             <td>
-                                <a href="{{ route('projects.pages.show', [$project, $donor->page]) }}">
-                                    {{ $donor->page->url }}
-                                </a>
+                                @foreach($donor->pages as $page)
+                                    <a href="{{ route('projects.pages.show', [$project, $page]) }}">
+                                        {{ $page->url }}
+                                    </a><br>
+                                @endforeach
                             </td>
                             <td>
                                 <a href="{{ $donor->link }}" target="_blank" rel="noopener noreferrer">
@@ -81,13 +88,21 @@ $script = '<script>
                                 </span>
                             </td>
                             <td>
-                                <a href="{{ route('projects.pages.donors.show', [$project, $donor->page, $donor]) }}" class="btn btn-sm btn-info">Просмотр</a>
-                                <a href="{{ route('projects.pages.donors.edit', [$project, $donor->page, $donor]) }}" class="btn btn-sm btn-primary">Редактировать</a>
-                                <form action="{{ route('projects.pages.donors.destroy', [$project, $donor->page, $donor]) }}" method="POST" style="display: inline;">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Вы уверены, что хотите удалить этот донор?')">Удалить</button>
-                                </form>
+                                <div class="d-flex align-items-center gap-2">
+                                    <a href="{{ route('projects.pages.donors.show', [$project, $donor->pages->first(), $donor]) }}" class="w-32-px h-32-px bg-info-focus text-info-600 rounded-circle d-flex justify-content-center align-items-center">
+                                        <iconify-icon icon="uil:eye"></iconify-icon>
+                                    </a>
+                                    <a href="{{ route('projects.pages.donors.edit', [$project, $donor->pages->first(), $donor]) }}" class="w-32-px h-32-px bg-success-focus text-success-600 rounded-circle d-flex justify-content-center align-items-center">
+                                        <iconify-icon icon="uil:edit"></iconify-icon>
+                                    </a>
+                                    <form action="{{ route('projects.pages.donors.destroy', [$project, $donor->pages->first(), $donor]) }}" method="POST" class="d-inline" onsubmit="return confirm('Вы уверены, что хотите удалить этот донор?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="w-32-px h-32-px bg-danger-focus text-danger-600 rounded-circle d-flex justify-content-center align-items-center border-0">
+                                            <iconify-icon icon="uil:trash-alt"></iconify-icon>
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     @endforeach
@@ -96,7 +111,7 @@ $script = '<script>
             </div>
         @else
             <div class="text-center py-20">
-                <p class="text-gray-500">Доноры не найдены. <a href="{{ route('projects.pages.create', $project) }}">Добавьте первую страницу</a> и затем создайте доноров для нее.</p>
+                <p class="text-gray-500">Доноры не найдены. @if($pages->count() > 0) <a href="{{ route('projects.pages.donors.create', [$project, $pages->first()]) }}">Добавьте первого донора</a> или выберите страницу из выпадающего меню. @else <a href="{{ route('projects.pages.create', $project) }}">Добавьте первую страницу</a> и затем создайте доноров для нее. @endif</p>
             </div>
         @endif
     </div>

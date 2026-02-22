@@ -75,11 +75,13 @@ class Page extends Model
     }
 
     /**
-     * Get the donors for the page.
+     * Get the donors that link to this page.
      */
     public function donors()
     {
-        return $this->hasMany(Donor::class);
+        return $this->belongsToMany(Donor::class, 'donor_page_anchor')
+            ->withPivot('anchor')
+            ->withTimestamps();
     }
 
     /**

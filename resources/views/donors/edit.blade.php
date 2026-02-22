@@ -43,26 +43,6 @@ $subTitle = 'Редактировать донора для страницы: ' 
                 </div>
 
                 <div class="row mb-3">
-                    <label class="col-sm-2 col-form-label" for="authority">Авторитетность</label>
-                    <div class="col-sm-10">
-                        <input type="number" id="authority" name="authority" class="form-control @error('authority') is-invalid @enderror" value="{{ old('authority', $donor->authority) }}" min="0" max="100" placeholder="0-100">
-                        @error('authority')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
-                </div>
-
-                <div class="row mb-3">
-                    <label class="col-sm-2 col-form-label" for="anchor">Анкор</label>
-                    <div class="col-sm-10">
-                        <input type="text" id="anchor" name="anchor" class="form-control @error('anchor') is-invalid @enderror" value="{{ old('anchor', $donor->anchor) }}" placeholder="Анкор">
-                        @error('anchor')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
-                </div>
-
-                <div class="row mb-3">
                     <label class="col-sm-2 col-form-label" for="link_type">Тип ссылки *</label>
                     <div class="col-sm-10">
                         <select id="link_type" name="link_type" class="form-control @error('link_type') is-invalid @enderror" required>
@@ -126,35 +106,10 @@ $subTitle = 'Редактировать донора для страницы: ' 
                 </div>
 
                 <div class="row mb-3">
-                    <label class="col-sm-2 col-form-label" for="duration">Срок действия ссылки</label>
-                    <div class="col-sm-10">
-                        <input type="text" id="duration" name="duration" class="form-control @error('duration') is-invalid @enderror" value="{{ old('duration', $donor->duration) }}" placeholder="например, 1 год">
-                        @error('duration')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
-                </div>
-
-                <div class="row mb-3">
                     <label class="col-sm-2 col-form-label" for="check_date">Дата проверки ссылки</label>
                     <div class="col-sm-10">
                         <input type="date" id="check_date" name="check_date" class="form-control @error('check_date') is-invalid @enderror" value="{{ old('check_date', $donor->check_date) }}">
                         @error('check_date')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
-                    </div>
-                </div>
-
-                <div class="row mb-3">
-                    <label class="col-sm-2 col-form-label" for="placement_type">Как размещена ссылка</label>
-                    <div class="col-sm-10">
-                        <select id="placement_type" name="placement_type" class="form-control @error('placement_type') is-invalid @enderror">
-                            <option value="">Выберите способ размещения</option>
-                            <option value="статья" {{ old('placement_type', $donor->placement_type) == 'статья' ? 'selected' : '' }}>Статья</option>
-                            <option value="обзор" {{ old('placement_type', $donor->placement_type) == 'обзор' ? 'selected' : '' }}>Обзор</option>
-                            <option value="контекстная" {{ old('placement_type', $donor->placement_type) == 'контекстная' ? 'selected' : '' }}>Контекстная</option>
-                        </select>
-                        @error('placement_type')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
@@ -196,6 +151,57 @@ $subTitle = 'Редактировать донора для страницы: ' 
                     </div>
                 </div>
 
+                <!-- Anchor Links -->
+                <div class="row mb-3">
+                    <label class="col-sm-2 col-form-label">Ссылки на страницы сайта</label>
+                    <div class="col-sm-10">
+                        <div id="anchor-links-container">
+                            @if(old('anchor_links'))
+                                @foreach(old('anchor_links') as $index => $anchorLink)
+                                    <div class="anchor-link-row d-flex gap-2 mb-2">
+                                        <input type="text" name="anchor_links[{{ $index }}][anchor]" class="form-control flex-1" placeholder="Анкор" value="{{ $anchorLink['anchor'] }}">
+                                        <select name="anchor_links[{{ $index }}][page_id]" class="form-control flex-1" required>
+                                            <option value="">Выберите страницу</option>
+                                            @foreach($project->pages as $p)
+                                                <option value="{{ $p->id }}" {{ $anchorLink['page_id'] == $p->id ? 'selected' : '' }}>{{ $p->url }}</option>
+                                            @endforeach
+                                        </select>
+                                        <button type="button" class="btn btn-danger remove-anchor-link">Удалить</button>
+                                    </div>
+                                @endforeach
+                            @elseif($donor->pages->count() > 0)
+                                @foreach($donor->pages as $index => $p)
+                                    <div class="anchor-link-row d-flex gap-2 mb-2">
+                                        <input type="text" name="anchor_links[{{ $index }}][anchor]" class="form-control flex-1" placeholder="Анкор" value="{{ $donor->pages->find($p->id)->pivot->anchor }}">
+                                        <select name="anchor_links[{{ $index }}][page_id]" class="form-control flex-1" required>
+                                            <option value="">Выберите страницу</option>
+                                            @foreach($project->pages as $pageOption)
+                                                <option value="{{ $pageOption->id }}" {{ $p->id == $pageOption->id ? 'selected' : '' }}>{{ $pageOption->url }}</option>
+                                            @endforeach
+                                        </select>
+                                        <button type="button" class="btn btn-danger remove-anchor-link">Удалить</button>
+                                    </div>
+                                @endforeach
+                            @else
+                                <div class="anchor-link-row d-flex gap-2 mb-2">
+                                    <input type="text" name="anchor_links[0][anchor]" class="form-control flex-1" placeholder="Анкор">
+                                    <select name="anchor_links[0][page_id]" class="form-control flex-1" required>
+                                        <option value="">Выберите страницу</option>
+                                        @foreach($project->pages as $p)
+                                            <option value="{{ $p->id }}">{{ $p->url }}</option>
+                                        @endforeach
+                                    </select>
+                                    <button type="button" class="btn btn-danger remove-anchor-link" style="display: none;">Удалить</button>
+                                </div>
+                            @endif
+                        </div>
+                        <button type="button" class="btn btn-outline-primary mt-2" id="add-anchor-link">Добавить ссылку на страницу</button>
+                        @error('anchor_links')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
+
                 <div class="row justify-content-end">
                     <div class="col-sm-10">
                         <button type="submit" class="btn btn-primary">Обновить донора</button>
@@ -206,4 +212,54 @@ $subTitle = 'Редактировать донора для страницы: ' 
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('anchor-links-container');
+    const addBtn = document.getElementById('add-anchor-link');
+    let index = {{ old('anchor_links') ? count(old('anchor_links')) : $donor->pages->count() }};
+
+    addBtn.addEventListener('click', function() {
+        const newRow = document.createElement('div');
+        newRow.className = 'anchor-link-row d-flex gap-2 mb-2';
+        newRow.innerHTML = `
+            <input type="text" name="anchor_links[${index}][anchor]" class="form-control flex-1" placeholder="Анкор">
+            <select name="anchor_links[${index}][page_id]" class="form-control flex-1" required>
+                <option value="">Выберите страницу</option>
+                @foreach($project->pages as $p)
+                    <option value="{{ $p->id }}">{{ $p->url }}</option>
+                @endforeach
+            </select>
+            <button type="button" class="btn btn-danger remove-anchor-link">Удалить</button>
+        `;
+        container.appendChild(newRow);
+        index++;
+
+        // Show remove button for all rows except first
+        document.querySelectorAll('.remove-anchor-link').forEach(btn => {
+            btn.style.display = 'inline-block';
+        });
+
+        // Add event listener to new remove button
+        newRow.querySelector('.remove-anchor-link').addEventListener('click', function() {
+            newRow.remove();
+            if (container.children.length <= 1) {
+                document.querySelector('.remove-anchor-link').style.display = 'none';
+            }
+        });
+    });
+
+    // Add event listeners to existing remove buttons
+    document.querySelectorAll('.remove-anchor-link').forEach(btn => {
+        btn.addEventListener('click', function() {
+            if (container.children.length > 1) {
+                btn.closest('.anchor-link-row').remove();
+                if (container.children.length <= 1) {
+                    document.querySelector('.remove-anchor-link').style.display = 'none';
+                }
+            }
+        });
+    });
+});
+</script>
 @endsection

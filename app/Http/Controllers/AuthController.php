@@ -11,6 +11,12 @@ use Illuminate\Support\Facades\Validator;
 class AuthController extends Controller
 {
     // Показать форму входа
+    public function showLogin()
+    {
+        return view('authentication.signIn');
+    }
+
+    // Показать форму входа (для совместимости)
     public function showLoginForm()
     {
         return view('authentication.signIn');

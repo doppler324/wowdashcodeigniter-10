@@ -16,7 +16,9 @@ Route::get('/', function () {
 
 // Auth routes
 Route::get('/login', [App\Http\Controllers\AuthController::class, 'showLogin'])->name('login');
-Route::post('/login', [App\Http\Controllers\AuthController::class, 'login']);
+Route::post('/login', [App\Http\Controllers\AuthController::class, 'login'])->name('login-post');
+Route::get('/register', [App\Http\Controllers\AuthController::class, 'showRegisterForm'])->name('signUp');
+Route::post('/register', [App\Http\Controllers\AuthController::class, 'register']);
 Route::post('/logout', [App\Http\Controllers\AuthController::class, 'logout'])->name('logout');
 
 // Protected routes
@@ -64,6 +66,18 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/settings/{setting}/edit', [App\Http\Controllers\ProjectSettingController::class, 'edit'])->name('projects.settings.edit');
         Route::put('/settings/{setting}', [App\Http\Controllers\ProjectSettingController::class, 'update'])->name('projects.settings.update');
         Route::delete('/settings/{setting}', [App\Http\Controllers\ProjectSettingController::class, 'destroy'])->name('projects.settings.destroy');
+
+        // Donors
+        Route::get('/donors', [DonorController::class, 'index'])->name('projects.donors.index');
+        Route::prefix('pages/{page}')->group(function () {
+            Route::get('/donors/create', [DonorController::class, 'create'])->name('projects.pages.donors.create');
+            Route::post('/donors', [DonorController::class, 'store'])->name('projects.pages.donors.store');
+            Route::get('/donors/{donor}', [DonorController::class, 'show'])->name('projects.pages.donors.show');
+            Route::get('/donors/{donor}/edit', [DonorController::class, 'edit'])->name('projects.pages.donors.edit');
+            Route::put('/donors/{donor}', [DonorController::class, 'update'])->name('projects.pages.donors.update');
+            Route::delete('/donors/{donor}', [DonorController::class, 'destroy'])->name('projects.pages.donors.destroy');
+            Route::get('/donors', [DonorController::class, 'indexForPage'])->name('projects.pages.donors.index');
+        });
 
         // Chart data
         Route::get('/chart-data', [ProjectsController::class, 'getChartDataByDateRange'])->name('projects.chart-data');
