@@ -16,7 +16,35 @@ class ExpensesController extends Controller
     {
         $this->authorize('view', $project);
         $expenses = $project->expenses()->with(['page', 'donor'])->paginate(10);
-        return view('expenses.index', compact('project', 'expenses'));
+
+        // Агрегация расходов по типам для чарта
+        $expensesByType = $project->expenses()
+            ->selectRaw('type, SUM(amount) as total')
+            ->groupBy('type')
+            ->get()
+            ->mapWithKeys(function ($item) {
+                return [$item->type => (float) $item->total];
+            });
+
+        // Маппинг типов на русские названия
+        $typeLabels = [
+            'hosting' => 'Хостинг',
+            'taxes' => 'Налоги',
+            'links' => 'Ссылки',
+            'service' => 'Сервис'
+        ];
+
+        // Подготовка данных для чарта
+        $chartLabels = [];
+        $chartSeries = [];
+        $chartColors = ['#487FFF', '#FF9F29', '#45B369', '#EF4A00']; // цвета для типов
+
+        foreach ($typeLabels as $key => $label) {
+            $chartLabels[] = $label;
+            $chartSeries[] = $expensesByType[$key] ?? 0.0;
+        }
+
+        return view('expenses.index', compact('project', 'expenses', 'chartLabels', 'chartSeries', 'chartColors'));
     }
 
     public function create(Project $project)
