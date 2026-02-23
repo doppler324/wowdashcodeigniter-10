@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Donor;
+use App\Models\Expense;
 use App\Models\Page;
 use App\Models\Project;
 use Illuminate\Http\Request;
@@ -74,6 +75,18 @@ class DonorController extends Controller
             ]);
         }
 
+        // Создать расход, если указана цена
+        if (isset($validated['price']) && $validated['price'] > 0) {
+            Expense::create([
+                'project_id' => $project->id,
+                'page_id' => null,
+                'donor_id' => $donor->id,
+                'activity_id' => null,
+                'type' => 'links',
+                'amount' => $validated['price'],
+            ]);
+        }
+
         return redirect()->route('projects.pages.show', [$project, $page])
             ->with('success', 'Донор успешно добавлен.');
     }
@@ -126,6 +139,32 @@ class DonorController extends Controller
             ]);
         }
 
+        // Обновить или создать/удалить расход
+        $expense = Expense::where('donor_id', $donor->id)->first();
+        if (isset($validated['price']) && $validated['price'] > 0) {
+            if ($expense) {
+                // Обновить существующий расход
+                $expense->update([
+                    'amount' => $validated['price'],
+                ]);
+            } else {
+                // Создать новый расход
+                Expense::create([
+                    'project_id' => $project->id,
+                    'page_id' => null,
+                    'donor_id' => $donor->id,
+                    'activity_id' => null,
+                    'type' => 'links',
+                    'amount' => $validated['price'],
+                ]);
+            }
+        } else {
+            // Если цена не указана или равна 0, удалить расход если существует
+            if ($expense) {
+                $expense->delete();
+            }
+        }
+
         return redirect()->route('projects.pages.show', [$project, $page])
             ->with('success', 'Донор успешно обновлен.');
     }
@@ -134,6 +173,9 @@ class DonorController extends Controller
     public function destroy(Project $project, Page $page, Donor $donor)
     {
         $this->authorize('delete', $project);
+
+        // Удалить связанный расход
+        Expense::where('donor_id', $donor->id)->delete();
 
         $donor->delete();
 

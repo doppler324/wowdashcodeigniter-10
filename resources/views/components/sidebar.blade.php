@@ -72,6 +72,12 @@
                 </a>
             </li>
             <li>
+                <a href="{{ route('projects.expenses.index', $currentProject) }}">
+                    <iconify-icon icon="mdi:cash" class="menu-icon"></iconify-icon>
+                    <span>Расходы</span>
+                </a>
+            </li>
+            <li>
                 <a href="{{ route('projects.settings.index', $currentProject) }}">
                     <iconify-icon icon="icon-park-outline:setting-two" class="menu-icon"></iconify-icon>
                     <span>Настройки</span>

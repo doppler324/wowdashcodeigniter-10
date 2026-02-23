@@ -7,6 +7,7 @@ use App\Http\Controllers\ActivitiesController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\YandexMetrikaController;
 use App\Http\Controllers\DonorController;
+use App\Http\Controllers\ExpensesController;
 use Illuminate\Support\Facades\Route;
 
 // Home route
@@ -78,6 +79,15 @@ Route::middleware(['auth'])->group(function () {
             Route::delete('/donors/{donor}', [DonorController::class, 'destroy'])->name('projects.pages.donors.destroy');
             Route::get('/donors', [DonorController::class, 'indexForPage'])->name('projects.pages.donors.index');
         });
+
+        // Expenses
+        Route::get('/expenses', [ExpensesController::class, 'index'])->name('projects.expenses.index');
+        Route::get('/expenses/create', [ExpensesController::class, 'create'])->name('projects.expenses.create');
+        Route::post('/expenses', [ExpensesController::class, 'store'])->name('projects.expenses.store');
+        Route::get('/expenses/{expense}', [ExpensesController::class, 'show'])->name('projects.expenses.show');
+        Route::get('/expenses/{expense}/edit', [ExpensesController::class, 'edit'])->name('projects.expenses.edit');
+        Route::put('/expenses/{expense}', [ExpensesController::class, 'update'])->name('projects.expenses.update');
+        Route::delete('/expenses/{expense}', [ExpensesController::class, 'destroy'])->name('projects.expenses.destroy');
 
         // Chart data
         Route::get('/chart-data', [ProjectsController::class, 'getChartDataByDateRange'])->name('projects.chart-data');

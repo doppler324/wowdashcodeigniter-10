@@ -75,4 +75,12 @@ class Project extends Model
     {
         return $this->hasOne(Setting::class);
     }
+
+    /**
+     * Get the expenses for the project.
+     */
+    public function expenses()
+    {
+        return $this->hasMany(Expense::class);
+    }
 }

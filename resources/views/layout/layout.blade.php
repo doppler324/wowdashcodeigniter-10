@@ -18,7 +18,7 @@
         <div class="dashboard-main-body">
 
             <!-- ..::  breadcrumb  start ::.. -->
-            <x-breadcrumb title='{{ $title }}' subTitle='{{ $subTitle }}' />
+            <x-breadcrumb pageTitle='{{ $pageTitle ?? "" }}' subTitle='{{ $subTitle ?? "" }}' />
             <!-- ..::  header area end ::.. -->
 
             @yield('content')
