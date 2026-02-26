@@ -54,6 +54,10 @@
                                     </small>
                                 @endif
                             </div>
+                            <div class="form-group">
+                                <label for="comment">Комментарий</label>
+                                <textarea name="comment" id="comment" class="form-control" rows="3" placeholder="Необязательный комментарий">{{ $expense->comment }}</textarea>
+                            </div>
 
                             <button type="submit" class="btn btn-primary">Обновить</button>
                             <a href="{{ route('projects.expenses.index', $project) }}" class="btn btn-secondary">Отмена</a>

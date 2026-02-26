@@ -31,7 +31,8 @@ class ExpensesController extends Controller
             'hosting' => 'Хостинг',
             'taxes' => 'Налоги',
             'links' => 'Ссылки',
-            'service' => 'Сервис'
+            'service' => 'Сервис',
+            'domains' => 'Домены'
         ];
 
         // Подготовка данных для чарта
@@ -58,7 +59,8 @@ class ExpensesController extends Controller
             'hosting' => 'Хостинг',
             'taxes' => 'Налоги',
             'links' => 'Ссылки',
-            'service' => 'Сервис'
+            'service' => 'Сервис',
+            'domains' => 'Домены'
         ];
         return view('expenses.create', compact('project', 'pages', 'donors', 'types'));
     }
@@ -67,10 +69,11 @@ class ExpensesController extends Controller
     {
         $this->authorize('update', $project);
         $validated = $request->validate([
-            'type' => 'required|in:hosting,taxes,links,service',
+            'type' => 'required|in:hosting,taxes,links,service,domains',
             'amount' => 'required|numeric|min:0',
             'page_id' => 'nullable|exists:pages,id',
-            'donor_id' => 'nullable|exists:donors,id'
+            'donor_id' => 'nullable|exists:donors,id',
+            'comment' => 'nullable|string|max:1000'
         ]);
 
         $project->expenses()->create($validated);
@@ -88,7 +91,8 @@ class ExpensesController extends Controller
             'hosting' => 'Хостинг',
             'taxes' => 'Налоги',
             'links' => 'Ссылки',
-            'service' => 'Сервис'
+            'service' => 'Сервис',
+            'domains' => 'Домены'
         ];
         return view('expenses.edit', compact('project', 'expense', 'pages', 'donors', 'types'));
     }
@@ -97,10 +101,11 @@ class ExpensesController extends Controller
     {
         $this->authorize('update', $project);
         $validated = $request->validate([
-            'type' => 'required|in:hosting,taxes,links,service',
+            'type' => 'required|in:hosting,taxes,links,service,domains',
             'amount' => 'required|numeric|min:0',
             'page_id' => 'nullable|exists:pages,id',
-            'donor_id' => 'nullable|exists:donors,id'
+            'donor_id' => 'nullable|exists:donors,id',
+            'comment' => 'nullable|string|max:1000'
         ]);
 
         $expense->update($validated);

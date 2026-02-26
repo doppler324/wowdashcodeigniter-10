@@ -15,7 +15,8 @@ class Expense extends Model
         'donor_id',
         'activity_id',
         'type',
-        'amount'
+        'amount',
+        'comment'
     ];
 
     protected $casts = [
@@ -49,7 +50,8 @@ class Expense extends Model
             'hosting' => 'Хостинг',
             'taxes' => 'Налоги',
             'links' => 'Ссылки',
-            'service' => 'Сервис'
+            'service' => 'Сервис',
+            'domains' => 'Домены'
         ];
 
         return $types[$this->type] ?? $this->type;

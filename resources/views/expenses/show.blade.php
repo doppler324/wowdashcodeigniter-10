@@ -23,13 +23,17 @@
                             <label>Страница</label>
                             <p>{{ $expense->page?->title ?? '-' }}</p>
                         </div>
-                        <div class="form-group">
-                            <label>Донор</label>
-                            <p>{{ $expense->donor?->domain ?? '-' }}</p>
-                        </div>
+                         <div class="form-group">
+                             <label>Донор</label>
+                             <p>{{ $expense->donor?->domain ?? '-' }}</p>
+                         </div>
+                         <div class="form-group">
+                             <label>Комментарий</label>
+                             <p>{{ $expense->comment ?? '-' }}</p>
+                         </div>
 
-                        <div class="form-group">
-                            <label>Дата создания</label>
+                         <div class="form-group">
+                             <label>Дата создания</label>
                             <p>{{ $expense->created_at->format('d.m.Y H:i') }}</p>
                         </div>
                         <div class="form-group">

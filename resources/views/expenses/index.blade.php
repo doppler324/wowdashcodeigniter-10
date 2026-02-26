@@ -96,24 +96,26 @@
                         @endif
                         <div class="table-responsive">
                             <table class="table table-bordered table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>Тип</th>
-                                        <th>Сумма</th>
-                                        <th>Страница</th>
-                                        <th>Донор</th>
-                                        <th>Дата создания</th>
-                                        <th>Действия</th>
-                                    </tr>
-                                </thead>
+                                 <thead>
+                                     <tr>
+                                         <th>Тип</th>
+                                         <th>Сумма</th>
+                                         <th>Страница</th>
+                                         <th>Донор</th>
+                                         <th>Комментарий</th>
+                                         <th>Дата создания</th>
+                                         <th>Действия</th>
+                                     </tr>
+                                 </thead>
                                 <tbody>
                                     @foreach($expenses as $expense)
                                         <tr>
-                                            <td>{{ $expense->type_name }}</td>
-                                            <td>{{ number_format($expense->amount, 2) }} ₽</td>
-                                            <td>{{ $expense->page?->title ?? '-' }}</td>
-                                            <td>{{ $expense->donor?->domain ?? '-' }}</td>
-                                            <td>{{ $expense->created_at->format('d.m.Y H:i') }}</td>
+                                         <td>{{ $expense->type_name }}</td>
+                                             <td>{{ number_format($expense->amount, 2) }} ₽</td>
+                                             <td>{{ $expense->page?->title ?? '-' }}</td>
+                                             <td>{{ $expense->donor?->domain ?? '-' }}</td>
+                                             <td>{{ Str::limit($expense->comment, 50) ?? '-' }}</td>
+                                             <td>{{ $expense->created_at->format('d.m.Y H:i') }}</td>
                                             <td>
                                                 <a href="{{ route('projects.expenses.show', [$project, $expense]) }}" class="btn btn-info btn-sm">
                                                     <i class="fa fa-eye"></i>
