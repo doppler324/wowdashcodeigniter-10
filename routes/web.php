@@ -49,6 +49,8 @@ Route::middleware(['auth'])->group(function () {
 
         // Keywords
         Route::get('/keywords', [KeywordsController::class, 'all'])->name('projects.keywords.index');
+        Route::get('/keywords/create', [KeywordsController::class, 'createForProject'])->name('projects.keywords.create');
+        Route::post('/keywords', [KeywordsController::class, 'storeForProject'])->name('projects.keywords.store');
 
         // Activities
         Route::get('/activities', [ActivitiesController::class, 'index'])->name('projects.activities.index');

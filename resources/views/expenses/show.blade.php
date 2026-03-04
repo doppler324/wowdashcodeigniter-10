@@ -1,8 +1,18 @@
+@php
+    $pageTitle = 'Просмотр расхода';
+    $subTitle = 'Проект: ' . $project->name;
+    $breadcrumbs = [
+        ['title' => 'Проекты', 'url' => route('projects.index')],
+        ['title' => $project->name, 'url' => route('projects.show', $project)],
+        ['title' => 'Расходы', 'url' => route('projects.expenses.index', $project)],
+        ['title' => 'Просмотр', 'url' => null],
+    ];
+@endphp
+
 @extends('layout.layout')
 
 @section('content')
 <div class="page-body">
-    @include('components.breadcrumb', ['pageTitle' => 'Просмотр расхода'])
     <div class="container-fluid">
         <div class="row">
             <div class="col-sm-12">

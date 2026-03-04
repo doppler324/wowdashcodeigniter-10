@@ -84,6 +84,7 @@ $script = '<script>
         </div>
          <div class="d-flex align-items-center flex-wrap gap-3">
             @if (isset($project))
+            <a href="{{ route('projects.pages.index', $project) }}" class="btn btn-primary">Добавить ключевое слово</a>
             <a href="{{ route('projects.show', $project) }}" class="btn btn-secondary">Назад к проекту</a>
             @endif
             <a href="{{ route('projects.index') }}" class="btn btn-secondary">Назад к списку проектов</a>

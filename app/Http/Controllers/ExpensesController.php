@@ -38,7 +38,7 @@ class ExpensesController extends Controller
         // Подготовка данных для чарта
         $chartLabels = [];
         $chartSeries = [];
-        $chartColors = ['#487FFF', '#FF9F29', '#45B369', '#EF4A00']; // цвета для типов
+        $chartColors = ['#487FFF', '#FF9F29', '#45B369', '#EF4A00', '#9C27B0']; // цвета для типов
 
         foreach ($typeLabels as $key => $label) {
             $chartLabels[] = $label;
