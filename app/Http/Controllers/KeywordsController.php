@@ -18,13 +18,34 @@ class KeywordsController extends Controller
     {
         $this->authorize('view', $project);
 
+        // Генерируем хлебные крошки
+        $breadcrumbService = app(\App\Services\BreadcrumbService::class);
+        $breadcrumbService->generateFromRoute();
+
+        // Получаем сгенерированные крошки
+        $breadcrumbs = $breadcrumbService->get();
+
+        // Если последний элемент "Ключевые слова", добавляем перед ним элемент с названием проекта
+        if (!empty($breadcrumbs) && end($breadcrumbs)['title'] === 'Ключевые слова') {
+            array_pop($breadcrumbs); // Убираем "Ключевые слова"
+            $breadcrumbs[] = [
+                'title' => $project->name,
+                'url' => route('projects.show', $project)
+            ];
+            $breadcrumbs[] = ['title' => 'Ключевые слова', 'url' => null];
+        } else {
+            // Иначе просто обновляем последний элемент
+            $breadcrumbService->updateLastItem($project->name);
+            $breadcrumbs = $breadcrumbService->get();
+        }
+
         $keywords = Keyword::with('page')
             ->whereHas('page.project', function ($query) use ($project) {
                 $query->where('id', $project->id);
             })
             ->get();
 
-        return view('keywords.index', compact('keywords', 'project'));
+        return view('keywords.index', compact('keywords', 'project', 'breadcrumbs'));
     }
 
     /**

@@ -14,11 +14,33 @@ class ProjectSettingController extends Controller
      */
     public function index(Project $project)
     {
+        // Генерируем хлебные крошки
+        $breadcrumbService = app(\App\Services\BreadcrumbService::class);
+        $breadcrumbService->generateFromRoute();
+
+        // Получаем сгенерированные крошки
+        $breadcrumbs = $breadcrumbService->get();
+
+        // Если последний элемент "Настройки", добавляем перед ним элемент с названием проекта
+        if (!empty($breadcrumbs) && end($breadcrumbs)['title'] === 'Настройки') {
+            array_pop($breadcrumbs); // Убираем "Настройки"
+            $breadcrumbs[] = [
+                'title' => $project->name,
+                'url' => route('projects.show', $project)
+            ];
+            $breadcrumbs[] = ['title' => 'Настройки', 'url' => null];
+        } else {
+            // Иначе просто обновляем последний элемент
+            $breadcrumbService->updateLastItem($project->name);
+            $breadcrumbs = $breadcrumbService->get();
+        }
+
         $setting = $project->setting ?? new Setting(['project_id' => $project->id, 'user_id' => Auth::id()]);
 
         return view('projects.settings.index', [
             'project' => $project,
             'setting' => $setting,
+            'breadcrumbs' => $breadcrumbs,
         ]);
     }
 

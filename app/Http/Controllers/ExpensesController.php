@@ -15,6 +15,28 @@ class ExpensesController extends Controller
     public function index(Project $project)
     {
         $this->authorize('view', $project);
+
+        // Генерируем хлебные крошки
+        $breadcrumbService = app(\App\Services\BreadcrumbService::class);
+        $breadcrumbService->generateFromRoute();
+
+        // Получаем сгенерированные крошки
+        $breadcrumbs = $breadcrumbService->get();
+
+        // Если последний элемент "Расходы", добавляем перед ним элемент с названием проекта
+        if (!empty($breadcrumbs) && end($breadcrumbs)['title'] === 'Расходы') {
+            array_pop($breadcrumbs); // Убираем "Расходы"
+            $breadcrumbs[] = [
+                'title' => $project->name,
+                'url' => route('projects.show', $project)
+            ];
+            $breadcrumbs[] = ['title' => 'Расходы', 'url' => null];
+        } else {
+            // Иначе просто обновляем последний элемент
+            $breadcrumbService->updateLastItem($project->name);
+            $breadcrumbs = $breadcrumbService->get();
+        }
+
         $expenses = $project->expenses()->with(['page', 'donor'])->paginate(10);
 
         // Агрегация расходов по типам для чарта
@@ -45,7 +67,7 @@ class ExpensesController extends Controller
             $chartSeries[] = $expensesByType[$key] ?? 0.0;
         }
 
-        return view('expenses.index', compact('project', 'expenses', 'chartLabels', 'chartSeries', 'chartColors'));
+        return view('expenses.index', compact('project', 'expenses', 'chartLabels', 'chartSeries', 'chartColors', 'breadcrumbs'));
     }
 
     public function create(Project $project)

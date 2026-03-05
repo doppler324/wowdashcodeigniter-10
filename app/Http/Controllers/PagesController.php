@@ -17,8 +17,29 @@ class PagesController extends Controller
     {
         $this->authorize('view', $project);
 
+        // Генерируем хлебные крошки
+        $breadcrumbService = app(\App\Services\BreadcrumbService::class);
+        $breadcrumbService->generateFromRoute();
+
+        // Получаем сгенерированные крошки
+        $breadcrumbs = $breadcrumbService->get();
+
+        // Если последний элемент "Страницы", добавляем перед ним элемент с названием проекта
+        if (!empty($breadcrumbs) && end($breadcrumbs)['title'] === 'Страницы') {
+            array_pop($breadcrumbs); // Убираем "Страницы"
+            $breadcrumbs[] = [
+                'title' => $project->name,
+                'url' => route('projects.show', $project)
+            ];
+            $breadcrumbs[] = ['title' => 'Страницы', 'url' => null];
+        } else {
+            // Иначе просто обновляем последний элемент
+            $breadcrumbService->updateLastItem($project->name);
+            $breadcrumbs = $breadcrumbService->get();
+        }
+
         $pages = $project->pages()->get();
-        return view('pages.index', compact('project', 'pages'));
+        return view('pages.index', compact('project', 'pages', 'breadcrumbs'));
     }
 
     /**
@@ -72,8 +93,20 @@ class PagesController extends Controller
     {
         $this->authorize('view', $project);
 
+        // Генерируем хлебные крошки и обновляем: добавляем страницу после проекта
+        $breadcrumbService = app(\App\Services\BreadcrumbService::class);
+        $breadcrumbService->generateFromRoute();
+        // Сначала обновляем проект
+        $breadcrumbService->updateLastItem($project->name, route('projects.show', $project));
+        // Затем добавляем страницу
+        $breadcrumbService->add($page->title);
+
         $page->load('donors', 'keywords');
-        return view('pages.show', compact('project', 'page'));
+
+        // Передаем обновленные хлебные крошки в представление
+        $breadcrumbs = $breadcrumbService->get();
+
+        return view('pages.show', compact('project', 'page', 'breadcrumbs'));
     }
 
     /**
@@ -82,6 +115,15 @@ class PagesController extends Controller
     public function edit(Project $project, Page $page)
     {
         $this->authorize('update', $project);
+
+        // Генерируем хлебные крошки и обновляем: добавляем страницу после проекта
+        $breadcrumbService = app(\App\Services\BreadcrumbService::class);
+        $breadcrumbService->generateFromRoute();
+        // Сначала обновляем проект
+        $breadcrumbService->updateLastItem($project->name, route('projects.show', $project));
+        // Затем добавляем страницу
+        $breadcrumbService->add($page->title);
+        $breadcrumbs = $breadcrumbService->get();
 
         // Получаем только разделы (section) и главную (home) для выбора родителя
         // Исключаем текущую страницу и её дочерние элементы из списка потенциальных родителей
@@ -93,7 +135,7 @@ class PagesController extends Controller
             ->orderBy('title')
             ->get();
 
-        return view('pages.edit', compact('project', 'page', 'potentialParents'));
+        return view('pages.edit', compact('project', 'page', 'potentialParents', 'breadcrumbs'));
     }
 
     /**

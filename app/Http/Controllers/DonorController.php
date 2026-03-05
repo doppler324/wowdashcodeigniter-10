@@ -19,13 +19,34 @@ class DonorController extends Controller
     {
         $this->authorize('view', $project);
 
+        // Генерируем хлебные крошки
+        $breadcrumbService = app(\App\Services\BreadcrumbService::class);
+        $breadcrumbService->generateFromRoute();
+
+        // Получаем сгенерированные крошки
+        $breadcrumbs = $breadcrumbService->get();
+
+        // Если последний элемент "Доноры", добавляем перед ним элемент с названием проекта
+        if (!empty($breadcrumbs) && end($breadcrumbs)['title'] === 'Доноры') {
+            array_pop($breadcrumbs); // Убираем "Доноры"
+            $breadcrumbs[] = [
+                'title' => $project->name,
+                'url' => route('projects.show', $project)
+            ];
+            $breadcrumbs[] = ['title' => 'Доноры', 'url' => null];
+        } else {
+            // Иначе просто обновляем последний элемент
+            $breadcrumbService->updateLastItem($project->name);
+            $breadcrumbs = $breadcrumbService->get();
+        }
+
         $donors = Donor::whereHas('pages', function ($query) use ($project) {
             $query->where('project_id', $project->id);
         })->with('pages')->get();
 
         $pages = $project->pages()->get();
 
-        return view('donors.index', compact('project', 'donors', 'pages'));
+        return view('donors.index', compact('project', 'donors', 'pages', 'breadcrumbs'));
     }
 
     // Display all donors for a specific page
@@ -34,7 +55,8 @@ class DonorController extends Controller
         $this->authorize('view', $project);
 
         $donors = $page->donors()->get();
-        return view('donors.index', compact('project', 'page', 'donors'));
+        $pages = $project->pages()->get();
+        return view('donors.index', compact('project', 'page', 'donors', 'pages'));
     }
 
     // Show the form for creating a new donor

@@ -29,6 +29,11 @@ class ProjectsController extends Controller
     {
         $this->authorize('view', $project);
 
+        // Генерируем хлебные крошки и обновляем последний элемент с названием проекта
+        $breadcrumbService = app(\App\Services\BreadcrumbService::class);
+        $breadcrumbService->generateFromRoute();
+        $breadcrumbService->updateLastItem($project->name);
+
         $pages = $project->pages()->get();
         $activities = $project->activities()->orderBy('event_date', 'desc')->get();
         $keywords = $project->keywords()->get();
@@ -148,7 +153,16 @@ class ProjectsController extends Controller
         // Кодируем аннотации в JSON с JSON_NUMERIC_CHECK
         $annotationsJson = json_encode($annotations, JSON_NUMERIC_CHECK);
 
-        return view('projects.show', compact('project', 'pages', 'activities', 'keywords', 'chartData', 'yearlyChartData', 'activitiesByDate', 'annotations'));
+        // Получаем обновленные хлебные крошки
+        $breadcrumbs = $breadcrumbService->get();
+
+        // Простая отладка
+        \Log::info('ProjectsController: передаем хлебные крошки', [
+            'count' => count($breadcrumbs),
+            'last_item' => !empty($breadcrumbs) ? end($breadcrumbs)['title'] ?? 'N/A' : 'N/A'
+        ]);
+
+        return view('projects.show', compact('project', 'pages', 'activities', 'keywords', 'chartData', 'yearlyChartData', 'activitiesByDate', 'annotations', 'breadcrumbs'));
     }
 
     /**
